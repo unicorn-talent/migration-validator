@@ -35,7 +35,7 @@ function scCallArgSanitize(arg: AnyJson): string[] | undefined {
     }
 }
 
-export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferEvent | ScCallEvent>, ChainListener<UnfreezeEvent> {
+export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferEvent | ScCallEvent>, ChainListener<UnfreezeEvent | ScCallEvent> {
     private readonly api: ApiPromise;
     private readonly freezer: ContractPromise;
     private readonly alice: KeyringPair; // TODO: Switch to proper keyringpair
@@ -114,8 +114,12 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
         }
     }
 
-    async emittedEventHandler(event: UnfreezeEvent): Promise<void> {
-        await this.unfreeze(event);
+    async emittedEventHandler(event: UnfreezeEvent | ScCallEvent): Promise<void> {
+        if (event instanceof UnfreezeEvent) {
+            await this.unfreeze(event);
+        } else if (event instanceof ScCallEvent) {
+            await this.sccall(event)
+        }
     }
 
     private async unfreeze(event: UnfreezeEvent): Promise<void> {
@@ -124,6 +128,15 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
             .pop({ value: 0, gasLimit: -1 }, event.id.toString(), event.to, event.value.toNumber())
             .signAndSend(this.alice, (result) => {
                 console.log("pop tx:", result.status);
+            });
+    }
+
+    private async sccall(event: ScCallEvent): Promise<void> {
+        //pub fn sc_call_verify(&mut self, action_id: String, to: AccountId, value: Balance, endpoint: [u8; 4], args: Vec<Vec<u8>>)
+        await this.freezer.tx
+            .scCallVerify({ value: event.value.toNumber(), gasLimit: -1 }, event.action_id.toString(), event.to, event.value.toNumber(), Buffer.from(event.endpoint, "hex"), event.args)
+            .signAndSend(this.alice, (result) => {
+                console.log("scCall tx:", result.status)
             });
     }
 }
