@@ -142,12 +142,13 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         this.signer.sign(tx);
         await tx.send(this.provider);
     
-        await tx.awaitNotarized(this.provider);
+        await tx.awaitExecuted(this.provider);
         console.log(`tx hash: ${tx.getHash().toString()}`)
         const res =  (await tx.getAsOnNetwork(this.provider)).getSmartContractResults();
         const data = res.getImmediate().outputUntyped();
         const decoder = new BinaryCodec();
         const evi = decoder.decodeTopLevel(data[0], event_info_t).valueOf();
+        console.log(`ev: ${JSON.stringify(evi)}`);
         if (evi["info"][0] == 0) {
             const unfreeze = decoder.decodeTopLevel(evi["info"].slice(1), unfreeze_event_t).valueOf();
             return new UnfreezeEvent(
