@@ -47,8 +47,15 @@ const event_t = new EnumType("Event", [
     new EnumVariantDefinition("Rpc", 1)
 ])
 
-const event_info_t = new StructType("EventInfo", [
+const event_info_rpc_t = new StructType("EventInfo", [
     new StructFieldDefinition("event", "", event_t),
+    new StructFieldDefinition("evrpc", "", rpc_event_t),
+    new StructFieldDefinition("read_cnt", "", new BigUIntType())
+]);
+
+const event_info_unfreeze_t = new StructType("EventInfo", [
+    new StructFieldDefinition("event", "", event_t),
+    new StructFieldDefinition("evunfreeze", "", unfreeze_event_t),
     new StructFieldDefinition("read_cnt", "", new BigUIntType())
 ]);
 
@@ -147,17 +154,15 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         const res =  (await tx.getAsOnNetwork(this.provider)).getSmartContractResults();
         const data = res.getImmediate().outputUntyped();
         const decoder = new BinaryCodec();
-        const evi = decoder.decodeTopLevel(data[0], event_info_t).valueOf();
-        console.log(`ev: ${JSON.stringify(evi)}`);
-        if (evi["info"][0] == 0) {
-            const unfreeze = decoder.decodeTopLevel(evi["info"].slice(1), unfreeze_event_t).valueOf();
+        if (data[0][0] == 0) {
+            const unfreeze = decoder.decodeNested(data[0], event_info_unfreeze_t)[0].valueOf().evunfreeze;
             return new UnfreezeEvent(
                 new BigNumber(id),
-                Buffer.from((unfreeze["to"])).toString(),
+                Buffer.from(unfreeze["to"]).toString(),
                 new BigNumber(Number(unfreeze["value"] as BigInt))
             )
-        } else if (evi["info"][0] == 1) {
-            const rpc = decoder.decodeTopLevel(evi["info"].slice(1), rpc_event_t).valueOf();
+        } else if (data[0][0] == 1) {
+            const rpc = decoder.decodeNested(data[0], event_info_rpc_t)[0].valueOf().evrpc;
             return new ScCallEvent(
                 new BigNumber(id),
                 Buffer.from((rpc["to"])).toString(),
