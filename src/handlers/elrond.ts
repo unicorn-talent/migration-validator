@@ -8,6 +8,8 @@ import {
     BinaryCodec,
     BytesValue,
     ContractFunction,
+    EnumType,
+    EnumVariantDefinition,
     //decodeString,
     GasLimit,
     ISigner,
@@ -28,12 +30,29 @@ import { Socket } from 'socket.io-client';
 import { ChainEmitter, ChainListener, ScCallEvent , TransferEvent, UnfreezeEvent } from '../chain_handler';
 
 
-const transfer_event_t = new StructType("TransferEvent", [
+const unfreeze_event_t = new StructType("Unfreeze", [
     new StructFieldDefinition("to", "", new ListType(new U8Type())),
     new StructFieldDefinition("value", "", new BigUIntType())
 ]);
 
-export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>, ChainEmitter<string, void, UnfreezeEvent> {
+const rpc_event_t = new StructType("Rpc", [
+    new StructFieldDefinition("to", "", new ListType(new U8Type())),
+    new StructFieldDefinition("value", "", new BigUIntType()),
+    new StructFieldDefinition("endpoint", "", new ListType(new U8Type())),
+    new StructFieldDefinition("args", "", new ListType(new ListType(new U8Type)))
+]);
+
+const event_t = new EnumType("Event", [
+    new EnumVariantDefinition("Unfreeze", 0),
+    new EnumVariantDefinition("Rpc", 1)
+])
+
+const event_info_t = new StructType("EventInfo", [
+    new StructFieldDefinition("event", "", event_t),
+    new StructFieldDefinition("read_cnt", "", new BigUIntType())
+]);
+
+export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>, ChainEmitter<string, void, UnfreezeEvent | ScCallEvent> {
     private readonly provider: ProxyProvider;
     private readonly sender: Account;
     private readonly signer: ISigner;
@@ -68,9 +87,10 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         );
     }
 
-    async eventHandler(id: string): Promise<UnfreezeEvent> {
-        const [to, value] = await this.unfreezeEventHandler(id);
-        return new UnfreezeEvent(new BigNumber(id), to, new BigNumber(value.toString()))
+    async eventHandler(id: string): Promise<UnfreezeEvent | undefined> {
+        const rpc_ev = await this.eventDecoder(id);
+        console.log(JSON.stringify(rpc_ev));
+        return undefined;
     }
 
     async emittedEventHandler(event: TransferEvent | ScCallEvent): Promise<void> {
@@ -106,7 +126,7 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         return tx;
     }
 
-    private async unfreezeEventHandler(id: string): Promise<[string, BigInt]> {
+    private async eventDecoder(id: string): Promise<UnfreezeEvent | ScCallEvent | undefined> {
         await this.sender.sync(this.provider);
     
         const tx = new Transaction({
@@ -127,9 +147,26 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         const res =  (await tx.getAsOnNetwork(this.provider)).getSmartContractResults();
         const data = res.getImmediate().outputUntyped();
         const decoder = new BinaryCodec();
-        const fin = decoder.decodeTopLevel(data[0], transfer_event_t).valueOf();
-    
-        return [Buffer.from((fin["to"])).toString(), fin["value"] as BigInt];
+        const evi = decoder.decodeTopLevel(data[0], event_info_t).valueOf();
+        if (evi["info"][0] == 0) {
+            const unfreeze = decoder.decodeTopLevel(evi["info"].slice(1), unfreeze_event_t).valueOf();
+            return new UnfreezeEvent(
+                new BigNumber(id),
+                Buffer.from((unfreeze["to"])).toString(),
+                new BigNumber(Number(unfreeze["value"] as BigInt))
+            )
+        } else if (evi["info"][0] == 1) {
+            const rpc = decoder.decodeTopLevel(evi["info"].slice(1), rpc_event_t).valueOf();
+            return new ScCallEvent(
+                new BigNumber(id),
+                Buffer.from((rpc["to"])).toString(),
+                new BigNumber(Number(rpc["value"] as BigInt)),
+                Buffer.from(rpc["endpoint"]).toString(),
+                rpc["args"].map((s: any) => Buffer.from(s).toString())
+            )
+        } else {
+            return undefined;
+        }
     }
 
     async scCallVerify({
