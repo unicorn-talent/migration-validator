@@ -125,7 +125,7 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
     private async unfreeze(event: UnfreezeEvent): Promise<void> {
         console.log(`unfreeze! to: ${event.to}, value: ${event.value}`);
         await this.freezer.tx
-            .pop({ value: 0, gasLimit: -1 }, event.id.toString(), event.to, event.value.toNumber())
+            .pop({ value: 0, gasLimit: -1 }, event.id.toString(), event.to, parseInt(event.value.toString()))
             .signAndSend(this.alice, (result) => {
                 console.log("pop tx:", result.status);
             });

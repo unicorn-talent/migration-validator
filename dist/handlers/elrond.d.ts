@@ -10,7 +10,7 @@ export declare class ElrondHelper implements ChainListener<TransferEvent | ScCal
     private constructor();
     eventIter(cb: (event: string) => Promise<void>): Promise<void>;
     static new: (node_uri: string, secret_key: string, sender: string, minter: string, socket: Socket) => Promise<ElrondHelper>;
-    eventHandler(id: string): Promise<UnfreezeEvent | undefined>;
+    eventHandler(id: string): Promise<ScCallEvent | UnfreezeEvent | undefined>;
     emittedEventHandler(event: TransferEvent | ScCallEvent): Promise<void>;
     private transferMintVerify;
     private eventDecoder;

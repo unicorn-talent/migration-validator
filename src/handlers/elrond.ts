@@ -94,10 +94,9 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         );
     }
 
-    async eventHandler(id: string): Promise<UnfreezeEvent | undefined> {
+    async eventHandler(id: string): Promise<ScCallEvent | UnfreezeEvent | undefined> {
         const rpc_ev = await this.eventDecoder(id);
-        console.log(JSON.stringify(rpc_ev));
-        return undefined;
+        return rpc_ev;
     }
 
     async emittedEventHandler(event: TransferEvent | ScCallEvent): Promise<void> {
