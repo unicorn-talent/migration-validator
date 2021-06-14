@@ -1,7 +1,7 @@
 {
   "metadataVersion": "0.1.0",
   "source": {
-    "hash": "0xd75cc19b7f6f0d1c655e3580817acf09ef86c5648b0e842cf6965f5a9f959099",
+    "hash": "0xe9b17312b0b58bf314685f89fc1baed826a359c81d013465089f5e4a9a6335ed",
     "language": "ink! 3.0.0-rc3",
     "compiler": "rustc 1.54.0-nightly"
   },
@@ -15,12 +15,31 @@
   "spec": {
     "constructors": [
       {
-        "args": [],
+        "args": [
+          {
+            "name": "version",
+            "type": {
+              "displayName": [
+                "u32"
+              ],
+              "type": 2
+            }
+          },
+          {
+            "name": "erc20_code",
+            "type": {
+              "displayName": [
+                "Hash"
+              ],
+              "type": 18
+            }
+          }
+        ],
         "docs": [],
         "name": [
-          "default"
+          "new"
         ],
-        "selector": "0xed4b9d1b"
+        "selector": "0x9bae9d5e"
       }
     ],
     "docs": [],
@@ -35,7 +54,7 @@
               "displayName": [
                 "u128"
               ],
-              "type": 14
+              "type": 15
             }
           },
           {
@@ -57,7 +76,7 @@
               "displayName": [
                 "Balance"
               ],
-              "type": 14
+              "type": 15
             }
           }
         ],
@@ -77,7 +96,7 @@
               "displayName": [
                 "u128"
               ],
-              "type": 14
+              "type": 15
             }
           },
           {
@@ -110,12 +129,51 @@
               "displayName": [
                 "Vec"
               ],
-              "type": 16
+              "type": 19
             }
           }
         ],
         "docs": [],
         "name": "ScCall"
+      },
+      {
+        "args": [
+          {
+            "docs": [],
+            "indexed": false,
+            "name": "action_id",
+            "type": {
+              "displayName": [
+                "u128"
+              ],
+              "type": 15
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "name": "to",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 11
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "name": "value",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 15
+            }
+          }
+        ],
+        "docs": [],
+        "name": "UnfreezeWrap"
       }
     ],
     "messages": [
@@ -146,6 +204,38 @@
       {
         "args": [
           {
+            "name": "to",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 11
+            }
+          },
+          {
+            "name": "value",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 15
+            }
+          }
+        ],
+        "docs": [
+          " Burn erc20 token & emit event"
+        ],
+        "mutates": true,
+        "name": [
+          "withdraw_wrapper"
+        ],
+        "payable": false,
+        "returnType": null,
+        "selector": "0x8cc357e0"
+      },
+      {
+        "args": [
+          {
             "name": "target_contract",
             "type": {
               "displayName": [
@@ -169,12 +259,13 @@
               "displayName": [
                 "Vec"
               ],
-              "type": 16
+              "type": 19
             }
           }
         ],
         "docs": [
-          " Emit an SCCall event"
+          " Emit an SCCall event",
+          " TODO: Charge some token amount for this"
         ],
         "mutates": true,
         "name": [
@@ -210,7 +301,7 @@
               "displayName": [
                 "Balance"
               ],
-              "type": 14
+              "type": 15
             }
           }
         ],
@@ -223,18 +314,108 @@
           "pop"
         ],
         "payable": false,
-        "returnType": {
-          "displayName": [
-            "bool"
-          ],
-          "type": 18
-        },
+        "returnType": null,
         "selector": "0x5dbd4378"
+      },
+      {
+        "args": [
+          {
+            "name": "action_id",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 11
+            }
+          },
+          {
+            "name": "to",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 4
+            }
+          },
+          {
+            "name": "value",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 15
+            }
+          },
+          {
+            "name": "endpoint",
+            "type": {
+              "displayName": [],
+              "type": 16
+            }
+          },
+          {
+            "name": "args",
+            "type": {
+              "displayName": [
+                "Option"
+              ],
+              "type": 17
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "sc_call_verify"
+        ],
+        "payable": false,
+        "returnType": null,
+        "selector": "0x845f21ef"
+      },
+      {
+        "args": [
+          {
+            "name": "action_id",
+            "type": {
+              "displayName": [
+                "String"
+              ],
+              "type": 11
+            }
+          },
+          {
+            "name": "to",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 4
+            }
+          },
+          {
+            "name": "value",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 15
+            }
+          }
+        ],
+        "docs": [],
+        "mutates": true,
+        "name": [
+          "send_wrapper_verify"
+        ],
+        "payable": false,
+        "returnType": null,
+        "selector": "0x5ea1a574"
       },
       {
         "args": [],
         "docs": [
           " Subscribe to events & become a validator",
+          " Placeholder for now",
           " TODO: Proper implementation"
         ],
         "mutates": true,
@@ -433,10 +614,28 @@
           "layout": {
             "cell": {
               "key": "0x0400000002000000000000000000000000000000000000000000000000000000",
-              "ty": 14
+              "ty": 15
             }
           },
           "name": "last_action"
+        },
+        {
+          "layout": {
+            "struct": {
+              "fields": [
+                {
+                  "layout": {
+                    "cell": {
+                      "key": "0x0500000002000000000000000000000000000000000000000000000000000000",
+                      "ty": 4
+                    }
+                  },
+                  "name": "account_id"
+                }
+              ]
+            }
+          },
+          "name": "wrapper"
         }
       ]
     }
@@ -666,12 +865,94 @@
     },
     {
       "def": {
-        "tuple": [
-          4,
-          14,
-          15
-        ]
-      }
+        "composite": {
+          "fields": [
+            {
+              "name": "action",
+              "type": 14,
+              "typeName": "Action"
+            },
+            {
+              "name": "validators",
+              "type": 2,
+              "typeName": "u32"
+            }
+          ]
+        }
+      },
+      "path": [
+        "freezer",
+        "freezer",
+        "ActionInfo"
+      ]
+    },
+    {
+      "def": {
+        "variant": {
+          "variants": [
+            {
+              "fields": [
+                {
+                  "name": "to",
+                  "type": 4,
+                  "typeName": "AccountId"
+                },
+                {
+                  "name": "value",
+                  "type": 15,
+                  "typeName": "Balance"
+                }
+              ],
+              "name": "Unfreeze"
+            },
+            {
+              "fields": [
+                {
+                  "name": "to",
+                  "type": 4,
+                  "typeName": "AccountId"
+                },
+                {
+                  "name": "value",
+                  "type": 15,
+                  "typeName": "Balance"
+                },
+                {
+                  "name": "endpoint",
+                  "type": 16,
+                  "typeName": "[u8; 4]"
+                },
+                {
+                  "name": "args",
+                  "type": 17,
+                  "typeName": "Option<u32>"
+                }
+              ],
+              "name": "RpcCall"
+            },
+            {
+              "fields": [
+                {
+                  "name": "to",
+                  "type": 4,
+                  "typeName": "AccountId"
+                },
+                {
+                  "name": "value",
+                  "type": 15,
+                  "typeName": "Balance"
+                }
+              ],
+              "name": "SendWrapped"
+            }
+          ]
+        }
+      },
+      "path": [
+        "freezer",
+        "freezer",
+        "Action"
+      ]
     },
     {
       "def": {
@@ -680,13 +961,59 @@
     },
     {
       "def": {
-        "primitive": "u16"
+        "array": {
+          "len": 4,
+          "type": 6
+        }
       }
     },
     {
       "def": {
+        "variant": {
+          "variants": [
+            {
+              "name": "None"
+            },
+            {
+              "fields": [
+                {
+                  "type": 2,
+                  "typeName": "T"
+                }
+              ],
+              "name": "Some"
+            }
+          ]
+        }
+      },
+      "params": [
+        2
+      ],
+      "path": [
+        "Option"
+      ]
+    },
+    {
+      "def": {
+        "composite": {
+          "fields": [
+            {
+              "type": 5,
+              "typeName": "[u8; 32]"
+            }
+          ]
+        }
+      },
+      "path": [
+        "ink_env",
+        "types",
+        "Hash"
+      ]
+    },
+    {
+      "def": {
         "sequence": {
-          "type": 17
+          "type": 20
         }
       }
     },
@@ -695,11 +1022,6 @@
         "sequence": {
           "type": 6
         }
-      }
-    },
-    {
-      "def": {
-        "primitive": "bool"
       }
     }
   ]

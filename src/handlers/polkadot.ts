@@ -35,7 +35,7 @@ function scCallArgSanitize(arg: AnyJson): string[] | undefined {
     }
 }
 
-export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferEvent | ScCallEvent>, ChainListener<UnfreezeEvent | ScCallEvent> {
+export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferEvent | ScCallEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent | ScCallEvent> {
     private readonly api: ApiPromise;
     private readonly freezer: ContractPromise;
     private readonly alice: KeyringPair; // TODO: Switch to proper keyringpair
@@ -78,7 +78,7 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
         });
     }
 
-    async eventHandler(ev: EventRecord): Promise<TransferEvent | ScCallEvent | undefined> {
+    async eventHandler(ev: EventRecord): Promise<TransferEvent | ScCallEvent | UnfreezeEvent | undefined> {
         const event = ev.event;
         // Not a contract event
         if (event.method != 'ContractEmitted') {
@@ -109,16 +109,25 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
                 return new ScCallEvent(action_id, to, new BigNumber(0), endpoint, scCallArgSanitize(args));
 
             }
+            case "UnfreezeWrap": {
+                const action_id = new BigNumber(cev.args[0].toJSON() as string);
+                const to = cev.args[1].toJSON() as string;
+                const value = new BigNumber(cev.args[2].toJSON() as number);
+
+                return new UnfreezeEvent(action_id, to, value);
+            }
             default:
                 throw Error(`unhandled event: ${cev.event.identifier}`)
         }
     }
 
-    async emittedEventHandler(event: UnfreezeEvent | ScCallEvent): Promise<void> {
+    async emittedEventHandler(event: TransferEvent | UnfreezeEvent | ScCallEvent): Promise<void> {
         if (event instanceof UnfreezeEvent) {
             await this.unfreeze(event);
         } else if (event instanceof ScCallEvent) {
             await this.sccall(event)
+        } else if (event instanceof TransferEvent) {
+            await this.send_wrap(event)
         }
     }
 
@@ -138,5 +147,14 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
             .signAndSend(this.alice, (result) => {
                 console.log("scCall tx:", result.status)
             });
+    }
+
+    private async send_wrap(event: TransferEvent): Promise<void> {
+        console.log(`send wrap! to: ${event.to}, value: ${event.value}`);
+        await this.freezer.tx
+            .sendWrapperVerify({ value: 0, gasLimit: -1 }, event.action_id.toString(), event.to, parseInt(event.value.toString()))
+            .signAndSend(this.alice, (result) => {
+                console.log(`sendWrap tx: ${result.status}`)
+            })
     }
 }

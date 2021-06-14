@@ -42,9 +42,15 @@ const rpc_event_t = new StructType("Rpc", [
     new StructFieldDefinition("args", "", new ListType(new ListType(new U8Type)))
 ]);
 
+const transfer_event_t = new StructType("Transfer", [
+    new StructFieldDefinition("to", "", new ListType(new U8Type())),
+    new StructFieldDefinition("value", "", new BigUIntType())
+])
+
 const event_t = new EnumType("Event", [
     new EnumVariantDefinition("Unfreeze", 0),
-    new EnumVariantDefinition("Rpc", 1)
+    new EnumVariantDefinition("Rpc", 1),
+    new EnumVariantDefinition("Transfer", 2)
 ])
 
 const event_info_rpc_t = new StructType("EventInfo", [
@@ -59,7 +65,13 @@ const event_info_unfreeze_t = new StructType("EventInfo", [
     new StructFieldDefinition("read_cnt", "", new BigUIntType())
 ]);
 
-export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>, ChainEmitter<string, void, UnfreezeEvent | ScCallEvent> {
+const event_info_transfer_t = new StructType("EventInfo", [
+    new StructFieldDefinition("event", "", event_t),
+    new StructFieldDefinition("evtransfer", "", transfer_event_t),
+    new StructFieldDefinition("read_cnt", "", new BigUIntType())
+])
+
+export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent | UnfreezeEvent>, ChainEmitter<string, void, TransferEvent | UnfreezeEvent | ScCallEvent> {
     private readonly provider: ProxyProvider;
     private readonly sender: Account;
     private readonly signer: ISigner;
@@ -94,21 +106,45 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         );
     }
 
-    async eventHandler(id: string): Promise<ScCallEvent | UnfreezeEvent | undefined> {
+    async eventHandler(id: string): Promise<TransferEvent | ScCallEvent | UnfreezeEvent | undefined> {
         const rpc_ev = await this.eventDecoder(id);
         return rpc_ev;
     }
 
-    async emittedEventHandler(event: TransferEvent | ScCallEvent): Promise<void> {
+    async emittedEventHandler(event: TransferEvent | ScCallEvent | UnfreezeEvent): Promise<void> {
         let tx: Transaction;
         if (event instanceof TransferEvent) {
             tx = await this.transferMintVerify(event);
         } else if (event instanceof ScCallEvent) {
             tx = await this.scCallVerify(event);
+        } else if (event instanceof UnfreezeEvent) {
+            tx = await this.unfreezeVerify(event);
         } else {
             throw Error("Unsupported event!");
         }
         console.log(`Elrond event hash: ${tx.getHash().toString()}`)
+    }
+
+    private async unfreezeVerify({ id, to, value }: UnfreezeEvent): Promise<Transaction> {
+        await this.sender.sync(this.provider);
+
+        const tx = new Transaction({
+            receiver: this.mintContract,
+            nonce: this.sender.nonce,
+            gasLimit: new GasLimit(50000000),
+            data: TransactionPayload.contractCall()
+                .setFunction(new ContractFunction('validateUnfreeze'))
+                .setFunction(new ContractFunction('validateSendXp'))
+                .addArg(new BigUIntValue(id))
+                .addArg(new AddressValue(new Address(to)))
+                .addArg(new U32Value(value))
+                .build(),
+        });
+
+        this.signer.sign(tx);
+        await tx.send(this.provider);
+
+        return tx;
     }
 
     private async transferMintVerify({ action_id, to, value }: TransferEvent): Promise<Transaction> {
@@ -132,7 +168,7 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         return tx;
     }
 
-    private async eventDecoder(id: string): Promise<UnfreezeEvent | ScCallEvent | undefined> {
+    private async eventDecoder(id: string): Promise<TransferEvent | UnfreezeEvent | ScCallEvent | undefined> {
         await this.sender.sync(this.provider);
     
         const tx = new Transaction({
@@ -153,24 +189,32 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent>,
         const res =  (await tx.getAsOnNetwork(this.provider)).getSmartContractResults();
         const data = res.getImmediate().outputUntyped();
         const decoder = new BinaryCodec();
-        if (data[0][0] == 0) {
-            const unfreeze = decoder.decodeNested(data[0], event_info_unfreeze_t)[0].valueOf().evunfreeze;
-            return new UnfreezeEvent(
-                new BigNumber(id),
-                Buffer.from(unfreeze["to"]).toString(),
-                new BigNumber(Number(unfreeze["value"] as BigInt))
-            )
-        } else if (data[0][0] == 1) {
-            const rpc = decoder.decodeNested(data[0], event_info_rpc_t)[0].valueOf().evrpc;
-            return new ScCallEvent(
-                new BigNumber(id),
-                Buffer.from((rpc["to"])).toString(),
-                new BigNumber(Number(rpc["value"] as BigInt)),
-                Buffer.from(rpc["endpoint"]).toString(),
-                rpc["args"].map((s: any) => Buffer.from(s).toString())
-            )
-        } else {
-            return undefined;
+        switch (data[0][0]) {
+            case 0:
+                const unfreeze = decoder.decodeNested(data[0], event_info_unfreeze_t)[0].valueOf().evunfreeze;
+                return new UnfreezeEvent(
+                    new BigNumber(id),
+                    Buffer.from(unfreeze["to"]).toString(),
+                    new BigNumber(Number(unfreeze["value"] as BigInt))
+                )
+            case 1:
+                const rpc = decoder.decodeNested(data[0], event_info_rpc_t)[0].valueOf().evrpc;
+                return new ScCallEvent(
+                    new BigNumber(id),
+                    Buffer.from((rpc["to"])).toString(),
+                    new BigNumber(Number(rpc["value"] as BigInt)),
+                    Buffer.from(rpc["endpoint"]).toString(),
+                    rpc["args"].map((s: any) => Buffer.from(s).toString())
+                )
+            case 2:
+                const transfer = decoder.decodeNested(data[0], event_info_transfer_t)[0].valueOf().evtransfer;
+                return new TransferEvent(
+                    new BigNumber(id),
+                    Buffer.from(transfer["to"]).toString(),
+                    new BigNumber(Number(transfer["value"] as BigInt))
+                )
+            default:
+                throw Error("unhandled event!!!")
         }
     }
 
