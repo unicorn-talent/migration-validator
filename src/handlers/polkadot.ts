@@ -96,7 +96,8 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
             case "Transfer": {
                 const action_id = new BigNumber(cev.args[0].toJSON() as string);
                 const to = cev.args[1].toJSON() as string;
-                const value = new BigNumber(cev.args[2].toJSON() as number);
+				//@ts-expect-error
+                const value = new BigNumber(cev.args[2].toJSON());
 
                 return new TransferEvent(action_id, to, value);
             }
@@ -112,7 +113,8 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
             case "UnfreezeWrap": {
                 const action_id = new BigNumber(cev.args[0].toJSON() as string);
                 const to = cev.args[1].toJSON() as string;
-                const value = new BigNumber(cev.args[2].toJSON() as number);
+				//@ts-expect-error
+                const value = new BigNumber(cev.args[2].toJSON());
 
                 return new UnfreezeEvent(action_id, to, value);
             }
@@ -134,7 +136,7 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
     private async unfreeze(event: UnfreezeEvent): Promise<void> {
         console.log(`unfreeze! to: ${event.to}, value: ${event.value}`);
         await this.freezer.tx
-            .pop({ value: 0, gasLimit: -1 }, event.id.toString(), event.to, parseInt(event.value.toString()))
+            .pop({ value: 0, gasLimit: -1 }, event.id.toString(), event.to, BigInt(event.value.toString()))
             .signAndSend(this.alice, (result) => {
                 console.log("pop tx:", result.status);
             });
@@ -143,7 +145,7 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
     private async sccall(event: ScCallEvent): Promise<void> {
         //pub fn sc_call_verify(&mut self, action_id: String, to: AccountId, value: Balance, endpoint: [u8; 4], args: Vec<Vec<u8>>)
         await this.freezer.tx
-            .scCallVerify({ value: event.value.toNumber(), gasLimit: -1 }, event.action_id.toString(), event.to, event.value.toNumber(), Buffer.from(event.endpoint, "hex"), event.args ? event.args[0] : undefined)
+            .scCallVerify({ value: event.value.toNumber(), gasLimit: -1 }, event.action_id.toString(), event.to, BigInt(event.value.toString()), Buffer.from(event.endpoint, "hex"), event.args ? event.args[0] : undefined)
             .signAndSend(this.alice, (result) => {
                 console.log("scCall tx:", result.status)
             });
@@ -152,7 +154,7 @@ export class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferE
     private async send_wrap(event: TransferEvent): Promise<void> {
         console.log(`send wrap! to: ${event.to}, value: ${event.value}`);
         await this.freezer.tx
-            .sendWrapperVerify({ value: 0, gasLimit: -1 }, event.action_id.toString(), event.to, parseInt(event.value.toString()))
+            .sendWrapperVerify({ value: 0, gasLimit: -1 }, event.action_id.toString(), event.to, BigInt(event.value.toString()))
             .signAndSend(this.alice, (result) => {
                 console.log(`sendWrap tx: ${result.status}`)
             })
