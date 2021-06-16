@@ -184,7 +184,7 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent |
         this.signer.sign(tx);
         await tx.send(this.provider);
     
-        await tx.awaitExecuted(this.provider);
+        await tx.awaitNotarized(this.provider);
         console.log(`tx hash: ${tx.getHash().toString()}`)
         const res =  (await tx.getAsOnNetwork(this.provider)).getSmartContractResults();
         const data = res.getImmediate().outputUntyped();
