@@ -134,7 +134,6 @@ export class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent |
             gasLimit: new GasLimit(50000000),
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('validateUnfreeze'))
-                .setFunction(new ContractFunction('validateSendXp'))
                 .addArg(new BigUIntValue(id))
                 .addArg(new AddressValue(new Address(to)))
                 .addArg(new U32Value(value))
