@@ -44,6 +44,13 @@ function scCallArgSanitize(arg: AnyJson): string[] | undefined {
     }
 }
 
+/**
+ * Polkadot Helper
+ * 
+ * Handles [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
+ * 
+ * Emits [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
+ */
 export class PolkadotHelper
     implements
         ChainEmitter<
@@ -73,6 +80,14 @@ export class PolkadotHelper
         });
     }
 
+    /**
+     * 
+     * @param node_uri uri of the local(or remote?) substrate/polkadot node
+     * @param freezer_abi ABI of the freezer smart contract
+     * @param contract_addr Address of the freezer smart contract
+     * 
+     * WARN: The helper object uses an internal account as a workaround.
+     */
     public static new = async (
         node_uri: string,
         freezer_abi: ConcreteJson,

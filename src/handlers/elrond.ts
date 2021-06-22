@@ -80,6 +80,13 @@ const event_info_transfer_t = new StructType('EventInfo', [
     new StructFieldDefinition('read_cnt', '', new BigUIntType()),
 ]);
 
+/**
+ * Elrond helper
+ * 
+ * Handles [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
+ * 
+ * Emits [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
+ */
 export class ElrondHelper
     implements
         ChainListener<TransferEvent | ScCallEvent | UnfreezeEvent>,
@@ -112,6 +119,14 @@ export class ElrondHelper
         );
     }
 
+    /**
+     * 
+     * @param node_uri uri of the local(or remote?) elrond node
+     * @param secret_key String containing the pem content of validator's private key
+     * @param sender Bech32 Address of the validator
+     * @param minter Bech32 Address of the elrond-mint smart contract
+     * @param socket uri of the elrond-event-middleware socket
+     */
     public static new = async (
         node_uri: string,
         secret_key: string,
