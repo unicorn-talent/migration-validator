@@ -15,7 +15,7 @@ const config = {
     // Substrate Freezer Contract address
     xp_freezer: '5EzHKhoRojLTuKEetgqY7TNDTNFUeLD9cU8si2xVVGLAnbcj',
     // Workaround Elrond Event websocket
-    elrond_ev_socket: "ws://localhost:3000"
+    elrond_ev_socket: 'ws://localhost:3000',
 };
 
 export default config;

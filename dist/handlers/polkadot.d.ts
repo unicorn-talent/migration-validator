@@ -6,7 +6,7 @@ export declare class PolkadotHelper implements ChainEmitter<EventRecord, void, T
     private readonly freezer;
     private readonly alice;
     private constructor();
-    eventIter(cb: ((event: EventRecord) => Promise<void>)): Promise<void>;
+    eventIter(cb: (event: EventRecord) => Promise<void>): Promise<void>;
     static new: (node_uri: string, freezer_abi: ConcreteJson, contract_addr: string) => Promise<PolkadotHelper>;
     private subscribe;
     eventHandler(ev: EventRecord): Promise<TransferEvent | ScCallEvent | UnfreezeEvent | undefined>;

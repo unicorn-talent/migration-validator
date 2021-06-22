@@ -15,5 +15,5 @@ export declare class ElrondHelper implements ChainListener<TransferEvent | ScCal
     private unfreezeVerify;
     private transferMintVerify;
     private eventDecoder;
-    scCallVerify({ action_id, to, value, endpoint, args }: ScCallEvent): Promise<Transaction>;
+    scCallVerify({ action_id, to, value, endpoint, args, }: ScCallEvent): Promise<Transaction>;
 }
