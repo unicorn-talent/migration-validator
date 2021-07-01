@@ -74,12 +74,11 @@ export class PolkadotHelper
     };
 
     private async subscribe() {
-        // TODO
-        /*await this.freezer.tx
-            .subscribe({ value: 0, gasLimit: -1 })
+        await this.api.tx.freezer
+            .subscribe()
             .signAndSend(this.alice, (result) => {
-                console.log(`sub tx: ${result.status}`);
-            });*/
+                console.log(`sub tx: ${result}`)
+            })
     }
 
     async eventHandler(
