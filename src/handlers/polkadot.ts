@@ -30,7 +30,7 @@ function sanitizeInner(arg: AnyJsonE): string {
     }
 }
 
-function scCallArgSanitize(arg: AnyJson): string[] | undefined {
+export function scCallArgSanitize(arg: AnyJson): string[] | undefined {
     if (
         typeof arg == 'string' ||
         typeof arg == 'boolean' ||
