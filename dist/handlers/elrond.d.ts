@@ -24,7 +24,7 @@ export declare class ElrondHelper implements ChainListener<TransferEvent | ScCal
      * @param minter Bech32 Address of the elrond-mint smart contract
      * @param socket uri of the elrond-event-middleware socket
      */
-    static new: (node_uri: string, secret_key: string, sender: string, minter: string, socket: Socket) => Promise<ElrondHelper>;
+    static new: (node_uri: string, secret_key: string, minter: string, socket: Socket) => Promise<ElrondHelper>;
     eventHandler(id: string): Promise<TransferEvent | ScCallEvent | UnfreezeEvent | undefined>;
     emittedEventHandler(event: TransferEvent | ScCallEvent | UnfreezeEvent): Promise<void>;
     private unfreezeVerify;

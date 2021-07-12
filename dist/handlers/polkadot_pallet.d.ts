@@ -1,3 +1,4 @@
+import { KeyringPair } from '@polkadot/keyring/types';
 import { EventRecord } from '@polkadot/types/interfaces';
 import { ChainEmitter, ChainListener, ScCallEvent, TransferEvent, UnfreezeEvent } from '../chain_handler';
 /**
@@ -7,9 +8,9 @@ import { ChainEmitter, ChainListener, ScCallEvent, TransferEvent, UnfreezeEvent 
  *
  * Emits [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
  */
-export declare class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferEvent | ScCallEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent | ScCallEvent> {
+export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, void, TransferEvent | ScCallEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent | ScCallEvent> {
     private readonly api;
-    private readonly alice;
+    private readonly signer;
     private constructor();
     eventIter(cb: (event: EventRecord) => Promise<void>): Promise<void>;
     /**
@@ -20,8 +21,7 @@ export declare class PolkadotHelper implements ChainEmitter<EventRecord, void, T
      *
      * WARN: The helper object uses an internal account as a workaround.
      */
-    static new: (node_uri: string) => Promise<PolkadotHelper>;
-    private subscribe;
+    static new: (node_uri: string, signer: KeyringPair) => Promise<PolkadotPalletHelper>;
     eventHandler(ev: EventRecord): Promise<TransferEvent | ScCallEvent | UnfreezeEvent | undefined>;
     emittedEventHandler(event: TransferEvent | UnfreezeEvent | ScCallEvent): Promise<void>;
     private unfreeze;

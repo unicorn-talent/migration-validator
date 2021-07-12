@@ -130,15 +130,13 @@ export class ElrondHelper
     public static new = async (
         node_uri: string,
         secret_key: string,
-        sender: string,
         minter: string,
         socket: Socket
     ): Promise<ElrondHelper> => {
         const provider = new ProxyProvider(node_uri);
         await NetworkConfig.getDefault().sync(provider);
-        const eMinterAddr = new Address(sender);
-        const senderac = new Account(eMinterAddr);
         const signer = new UserSigner(parseUserKey(secret_key));
+        const senderac = new Account(signer.getAddress());
 
         return new ElrondHelper(
             provider,
