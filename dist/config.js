@@ -10,7 +10,7 @@ const config = {
     // Elrond Address (TODO: Derive from pk automatically)
     elrond_sender: 'erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th',
     // Elrond minter contract address
-    elrond_minter: 'erd1qqqqqqqqqqqqqpgqlz32muzjtu40pp9lapy35n0cvrdxll47d8ss9ne0ta',
+    elrond_minter: 'erd1qqqqqqqqqqqqqpgqygvvtlty3v7cad507v5z793duw9jjmlxd8sszs8a2y',
     // Substrate Freezer Contract address
     xp_freezer: '5EzHKhoRojLTuKEetgqY7TNDTNFUeLD9cU8si2xVVGLAnbcj',
     // Workaround Elrond Event websocket

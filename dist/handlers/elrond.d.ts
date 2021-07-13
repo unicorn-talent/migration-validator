@@ -1,6 +1,6 @@
 import { Transaction } from '@elrondnetwork/erdjs';
 import { Socket } from 'socket.io-client';
-import { ChainEmitter, ChainListener, ScCallEvent, TransferEvent, UnfreezeEvent } from '../chain_handler';
+import { ChainEmitter, ChainListener, ScCallEvent, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from '../chain_handler';
 /**
  * Elrond helper
  *
@@ -8,12 +8,13 @@ import { ChainEmitter, ChainListener, ScCallEvent, TransferEvent, UnfreezeEvent 
  *
  * Emits [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
  */
-export declare class ElrondHelper implements ChainListener<TransferEvent | ScCallEvent | UnfreezeEvent>, ChainEmitter<string, void, TransferEvent | UnfreezeEvent | ScCallEvent> {
+export declare class ElrondHelper implements ChainListener<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent>, ChainEmitter<string, void, TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent> {
     private readonly provider;
     private readonly sender;
     private readonly signer;
     private readonly mintContract;
     private readonly eventSocket;
+    private readonly codec;
     private constructor();
     eventIter(cb: (event: string) => Promise<void>): Promise<void>;
     /**
@@ -25,9 +26,11 @@ export declare class ElrondHelper implements ChainListener<TransferEvent | ScCal
      * @param socket uri of the elrond-event-middleware socket
      */
     static new: (node_uri: string, secret_key: string, minter: string, socket: Socket) => Promise<ElrondHelper>;
-    eventHandler(id: string): Promise<TransferEvent | ScCallEvent | UnfreezeEvent | undefined>;
-    emittedEventHandler(event: TransferEvent | ScCallEvent | UnfreezeEvent): Promise<void>;
+    eventHandler(id: string): Promise<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeUniqueEvent | UnfreezeEvent | undefined>;
+    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent): Promise<void>;
     private unfreezeVerify;
+    private unfreezeNftVerify;
+    private transferNftVerify;
     private transferMintVerify;
     private eventDecoder;
     scCallVerify({ action_id, to, value, endpoint, args, }: ScCallEvent): Promise<Transaction>;

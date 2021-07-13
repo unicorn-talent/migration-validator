@@ -38,7 +38,7 @@ const main = async () => {
     const bobE = await fs.promises.readFile("../XP.network-Elrond-Migration/elrond-mint-contract/wallets/users/bob.pem", "utf-8");
     const carolE = await fs.promises.readFile("../XP.network-Elrond-Migration/elrond-mint-contract/wallets/users/carol.pem", "utf-8");
     const signersE = [aliceE, bobE, carolE];
-    for (let i = 0; i < 2; i += 1) {
+    for (let i = 0; i < 1; i += 1) {
         const polka = await index_1.PolkadotPalletHelper.new(config_1.default.xnode, signersP[i]);
         const elrd = await index_1.ElrondHelper.new(config_1.default.elrond_node, signersE[i], config_1.default.elrond_minter, socket_io_client_1.io(config_1.default.elrond_ev_socket));
         index_1.emitEvents(polka, elrd);

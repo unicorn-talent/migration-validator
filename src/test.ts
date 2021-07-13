@@ -19,7 +19,7 @@ const main = async () => {
     const carolE = await fs.promises.readFile("../XP.network-Elrond-Migration/elrond-mint-contract/wallets/users/carol.pem", "utf-8")
     const signersE = [aliceE, bobE, carolE];
 
-    for (let i = 0; i < 2; i += 1) {
+    for (let i = 0; i < 1; i += 1) {
         const polka = await PolkadotPalletHelper.new(
             config.xnode,
             signersP[i]

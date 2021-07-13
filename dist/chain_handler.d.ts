@@ -16,6 +16,12 @@ export declare class TransferEvent {
     readonly value: BigNumber;
     constructor(action_id: BigNumber, to: string, value: BigNumber);
 }
+export declare class TransferUniqueEvent {
+    readonly action_id: BigNumber;
+    readonly to: string;
+    readonly id: Uint8Array;
+    constructor(action_id: BigNumber, to: string, id: Uint8Array);
+}
 /**
  * An event indicating wrapped tokens were burnt in the target blockchain
  * indicates that X tokens are ready to be released in the source blockchain
@@ -25,6 +31,12 @@ export declare class UnfreezeEvent {
     readonly to: string;
     readonly value: BigNumber;
     constructor(action_id: BigNumber, to: string, value: BigNumber);
+}
+export declare class UnfreezeUniqueEvent {
+    readonly id: BigNumber;
+    readonly to: string;
+    readonly nft_id: Uint8Array;
+    constructor(action_id: BigNumber, to: string, id: Uint8Array);
 }
 /**
  * An event indicating a request to call another smart contract in target blockchain

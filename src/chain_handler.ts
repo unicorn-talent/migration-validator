@@ -24,6 +24,18 @@ export class TransferEvent {
     }
 }
 
+export class TransferUniqueEvent {
+    readonly action_id: BigNumber;
+    readonly to: string;
+    readonly id: Uint8Array;
+
+    constructor(action_id: BigNumber, to: string, id: Uint8Array) {
+        this.action_id = action_id;
+        this.to = to;
+        this.id = id;
+    }
+}
+
 /**
  * An event indicating wrapped tokens were burnt in the target blockchain
  * indicates that X tokens are ready to be released in the source blockchain
@@ -37,6 +49,18 @@ export class UnfreezeEvent {
         this.id = action_id;
         this.to = to;
         this.value = value;
+    }
+}
+
+export class UnfreezeUniqueEvent {
+    readonly id: BigNumber;
+    readonly to: string;
+    readonly nft_id: Uint8Array;
+
+    constructor(action_id: BigNumber, to: string, id: Uint8Array) {
+        this.id = action_id;
+        this.to = to;
+        this.nft_id = id;
     }
 }
 
