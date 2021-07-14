@@ -94,7 +94,42 @@ export class PolkadotHelper
         contract_addr: string
     ): Promise<PolkadotHelper> => {
         const provider = new WsProvider(node_uri);
-        const api = await ApiPromise.create({ provider: provider });
+        const api = await ApiPromise.create({
+			provider: provider,
+			types: {
+                ActionId: 'u128',
+                TokenId: 'u128',
+                CommodityId: 'H256',
+                CommodityInfo: 'Vec<u8>',
+                NftId: 'H256',
+                NftInfo: 'Vec<u8>',
+                EgldBalance: 'Balance',
+                Commodity: '(H256, Vec<u8>)',
+                LocalAction: {
+                    _enum: {
+                        //@ts-expect-error struct
+                        Unfreeze: {
+                            to: 'AccountId',
+                            value: 'Balance',
+                        },
+                        //@ts-expect-error struct
+                        RpcCall: {
+                            contract: 'AccountId',
+                            call_data: 'Vec<u8>',
+                        },
+                        //@ts-expect-error struct
+                        TransferWrapped: {
+                            to: 'AccountId',
+                            value: 'Balance',
+                        },
+                    },
+                },
+                ActionInfo: {
+                    action: 'LocalAction',
+                    validators: 'BTreeSet<AccountId>',
+                },
+            },
+		});
         const freezer = new ContractPromise(api, freezer_abi, contract_addr);
 
         const keyring = new Keyring({});
