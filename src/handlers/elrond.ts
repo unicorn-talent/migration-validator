@@ -338,6 +338,7 @@ export class ElrondHelper
         this.signer.sign(tx);
         await tx.send(this.provider);
 
+		await new Promise(r => setTimeout(r, 4000));
         await tx.awaitNotarized(this.provider);
         console.log(`tx hash: ${tx.getHash().toString()}`);
         const res = (
