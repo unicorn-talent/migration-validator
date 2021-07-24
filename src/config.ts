@@ -16,6 +16,9 @@ const config = {
     xp_freezer: '5EzHKhoRojLTuKEetgqY7TNDTNFUeLD9cU8si2xVVGLAnbcj',
     // Workaround Elrond Event websocket
     elrond_ev_socket: 'ws://localhost:3000',
+	heco_node: "https://http-testnet.hecochain.com",
+	heco_pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
+	heco_minter: "0x58c84A7d3B3b019A24Faf578E82aC6B642441931",
 };
 
 export default config;

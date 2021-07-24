@@ -16,10 +16,19 @@ import {
 import { toHex } from './common';
 import { scCallArgSanitize } from './polkadot';
 
-function sanitizeHexData(dest: Codec) {
-    return Buffer.from(dest.toString().replace('0x', ''), 'hex').toString(
+const REPLACEMENT_CHAR = '\ufffd'
+
+function sanitizeHexData(dat: Codec) {
+	const dats = dat.toString();
+    let res = Buffer.from(dats.replace('0x', ''), 'hex').toString(
         'utf-8'
     );
+
+	if (res.includes(REPLACEMENT_CHAR)) {
+		res = dats;
+	}
+
+	return res;
 }
 
 /**
