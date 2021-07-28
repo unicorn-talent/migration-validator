@@ -252,7 +252,7 @@ export class PolkadotPalletHelper
             .transferWrappedNftVerify(
                 event.action_id.toString(),
                 event.to,
-                toHex(event.id)
+                `0x${toHex(event.id)}`
             )
             .signAndSend(this.signer, (result) => {
                 console.log(`send wrap nft: ${result.status}`);
