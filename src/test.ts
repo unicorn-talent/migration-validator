@@ -8,6 +8,7 @@ import { abi } from "./Minter.json";
 import { ElrondHelper, emitEvents, PolkadotPalletHelper, Web3Helper } from './index';
 import {ChainEmitter, ChainListener} from './chain_handler';
 
+//@ts-ignore
 async function polkadotTestHelper(): Promise<PolkadotPalletHelper> {
 	await waitReady();
 	const keyring = new Keyring();
@@ -17,9 +18,9 @@ async function polkadotTestHelper(): Promise<PolkadotPalletHelper> {
 	);
 }
 
-//@ts-expect-error unused
+//@ts-ignore
 async function elrondTestHelper(): Promise<ElrondHelper> {
-    const aliceE = await fs.promises.readFile("../XP.network-Elrond-Migration/elrond-mint-contract/wallets/users/alice.pem", "utf-8");
+    const aliceE = await fs.promises.readFile(config.private_key, "utf-8");
 	return await ElrondHelper.new(
 		config.elrond_node,
 		aliceE,
@@ -28,6 +29,7 @@ async function elrondTestHelper(): Promise<ElrondHelper> {
 	);
 }
 
+//@ts-ignore
 async function web3TestHelper(): Promise<Web3Helper> {
 	return await Web3Helper.new(
 		config.heco_node,
@@ -40,14 +42,14 @@ async function web3TestHelper(): Promise<Web3Helper> {
 
 type TwoWayChain<E, I, H> = ChainEmitter<E, I, H> & ChainListener<H>;
 
+//@ts-ignore
 async function listen2way<E1, E2, I, H>(b1: TwoWayChain<E1, I, H>, b2: TwoWayChain<E2, I, H>): Promise<void> {
 	emitEvents(b1, b2);
 	emitEvents(b2, b1);
 }
 
 const main = async () => {
-	listen2way(await polkadotTestHelper(), await web3TestHelper());
-
+	listen2way(await polkadotTestHelper(), await elrondTestHelper());
     console.log('READY TO LISTEN EVENTS!');
 };
 

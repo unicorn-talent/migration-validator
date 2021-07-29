@@ -173,13 +173,13 @@ export class PolkadotPalletHelper
                     event.data[0].toString() as string
                 );
                 const to = sanitizeHexData(event.data[1]);
-                const data = sanitizeHexData(event.data[2]);
+                const data = event.data[2].toString().replace('0x', '');
 
                 return new UnfreezeUniqueEvent(
                     action_id,
                     to,
                     Buffer.from(data, 'hex')
-                )
+				)
             }
             default:
                 return undefined;
