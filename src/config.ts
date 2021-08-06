@@ -1,8 +1,9 @@
 const config = {
+    tx_port: 3001,
     // Substrate Node Uri
     xnode: 'ws://localhost:9944',
     // Elrond Node Proxy Uri
-    elrond_node: 'https://testnet-api.elrond.com',
+    elrond_node: 'http://localhost:7950',
     // Private Key File
     private_key:
         '../XP.network-Elrond-Migration/erd1yflgh7duhhvpkqkqqjrcnz7j6pqnhy8kepglkk6k8h8dfu3as3ysdcxan8.pem',

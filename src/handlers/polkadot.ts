@@ -58,7 +58,7 @@ export class PolkadotHelper
             void,
             TransferEvent | ScCallEvent | UnfreezeEvent
         >,
-        ChainListener<TransferEvent | UnfreezeEvent | ScCallEvent>
+        ChainListener<TransferEvent | UnfreezeEvent | ScCallEvent, void>
 {
     private readonly api: ApiPromise;
     private readonly freezer: ContractPromise;

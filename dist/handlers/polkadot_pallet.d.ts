@@ -1,6 +1,6 @@
 import { KeyringPair } from '@polkadot/keyring/types';
-import { EventRecord } from '@polkadot/types/interfaces';
-import { ChainEmitter, ChainListener, ScCallEvent, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from '../chain_handler';
+import { EventRecord, Hash } from '@polkadot/types/interfaces';
+import { ChainEmitter, ChainIdentifier, ChainListener, ScCallEvent, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from '../chain_handler';
 /**
  * Polkadot Freezer Pallet Helper
  *
@@ -8,9 +8,10 @@ import { ChainEmitter, ChainListener, ScCallEvent, TransferEvent, TransferUnique
  *
  * Emits [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
  */
-export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, void, TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent>, ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent> {
+export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, void, TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent>, ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent, Hash>, ChainIdentifier {
     private readonly api;
     private readonly signer;
+    readonly chainIdentifier = "POLKADOT";
     private constructor();
     eventIter(cb: (event: EventRecord) => Promise<void>): Promise<void>;
     /**
@@ -23,7 +24,8 @@ export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, v
      */
     static new: (node_uri: string, signer: KeyringPair) => Promise<PolkadotPalletHelper>;
     eventHandler(ev: EventRecord): Promise<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined>;
-    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent): Promise<void>;
+    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent): Promise<Hash>;
+    private resolve_block;
     private unfreeze;
     private sccall;
     private unfreeze_nft;

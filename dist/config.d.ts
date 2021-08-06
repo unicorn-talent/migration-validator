@@ -1,4 +1,5 @@
 declare const config: {
+    tx_port: number;
     xnode: string;
     elrond_node: string;
     private_key: string;

@@ -10,7 +10,7 @@ export declare function scCallArgSanitize(arg: AnyJson): string[] | undefined;
  *
  * Emits [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
  */
-export declare class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferEvent | ScCallEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent | ScCallEvent> {
+export declare class PolkadotHelper implements ChainEmitter<EventRecord, void, TransferEvent | ScCallEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent | ScCallEvent, void> {
     private readonly api;
     private readonly freezer;
     private readonly alice;

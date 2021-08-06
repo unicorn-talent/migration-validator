@@ -1,14 +1,15 @@
 import * as fs from 'fs';
+import { createServer } from "http";
 import { Keyring } from '@polkadot/api';
 import { waitReady } from '@polkadot/wasm-crypto';
-import { io } from 'socket.io-client';
+import { io as io_client } from "socket.io-client";
 
-import config from './config';
 import { abi } from "./Minter.json";
+import {ChainEmitter, ChainIdentifier, ChainListener} from './chain_handler';
+import config from './config';
+import { txEventSocket, TxnSocketServe } from './socket';
 import { ElrondHelper, emitEvents, PolkadotPalletHelper, Web3Helper } from './index';
-import {ChainEmitter, ChainListener} from './chain_handler';
 
-//@ts-ignore
 async function polkadotTestHelper(): Promise<PolkadotPalletHelper> {
 	await waitReady();
 	const keyring = new Keyring();
@@ -18,18 +19,17 @@ async function polkadotTestHelper(): Promise<PolkadotPalletHelper> {
 	);
 }
 
-//@ts-ignore
 async function elrondTestHelper(): Promise<ElrondHelper> {
     const aliceE = await fs.promises.readFile(config.private_key, "utf-8");
 	return await ElrondHelper.new(
 		config.elrond_node,
 		aliceE,
 		config.elrond_minter,
-		io(config.elrond_ev_socket)
+		io_client(config.elrond_ev_socket)
 	);
 }
 
-//@ts-ignore
+//@ts-expect-error stfu
 async function web3TestHelper(): Promise<Web3Helper> {
 	return await Web3Helper.new(
 		config.heco_node,
@@ -40,16 +40,27 @@ async function web3TestHelper(): Promise<Web3Helper> {
 	);
 }
 
-type TwoWayChain<E, I, H> = ChainEmitter<E, I, H> & ChainListener<H>;
+function testSocketServer(): TxnSocketServe {
+	const httpServ = createServer();
 
-//@ts-ignore
-async function listen2way<E1, E2, I, H>(b1: TwoWayChain<E1, I, H>, b2: TwoWayChain<E2, I, H>): Promise<void> {
-	emitEvents(b1, b2);
-	emitEvents(b2, b1);
+	const io = txEventSocket(httpServ);
+
+	httpServ.listen(config.tx_port, () => console.log(`tx socket listening @${config.tx_port}`));
+
+	return io;
+}
+
+
+type TwoWayChain<E, I, H, Tx> = ChainEmitter<E, I, H> & ChainListener<H, Tx> & ChainIdentifier;
+
+async function listen2way<E1, E2, I, H, Tx1, Tx2>(io: TxnSocketServe, b1: TwoWayChain<E1, I, H, Tx1>, b2: TwoWayChain<E2, I, H, Tx2>): Promise<void> {
+	emitEvents(io, b1, b2);
+	emitEvents(io, b2, b1);
 }
 
 const main = async () => {
-	listen2way(await polkadotTestHelper(), await elrondTestHelper());
+	const io = testSocketServer();
+	listen2way(io, await polkadotTestHelper(), await elrondTestHelper());
     console.log('READY TO LISTEN EVENTS!');
 };
 

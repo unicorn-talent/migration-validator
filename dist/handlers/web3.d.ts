@@ -12,12 +12,12 @@ declare type SolEvent = {
     readonly to: string;
     readonly value: BigNumber;
 };
-export declare class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent> {
+export declare class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent, string> {
     readonly mintContract: Contract;
     private constructor();
     static new: (provider_uri: string, pkey: string, minter: string, minterAbi: Interface) => Promise<Web3Helper>;
     eventIter(cb: ((event: SolEvent) => Promise<void>)): Promise<void>;
     eventHandler(ev: SolEvent): Promise<TransferEvent | UnfreezeEvent | undefined>;
-    emittedEventHandler(event: TransferEvent | UnfreezeEvent): Promise<void>;
+    emittedEventHandler(event: TransferEvent | UnfreezeEvent): Promise<string>;
 }
 export {};

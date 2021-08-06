@@ -24,6 +24,7 @@ import {
     TokenIdentifierType,
     TokenIdentifierValue,
     Transaction,
+    TransactionHash,
     TransactionPayload,
     U32Value,
     U64Type,
@@ -35,6 +36,7 @@ import BigNumber from 'bignumber.js';
 import { Socket } from 'socket.io-client';
 import {
     ChainEmitter,
+    ChainIdentifier,
     ChainListener,
     ScCallEvent,
     TransferEvent,
@@ -130,8 +132,9 @@ const nft_info_encoded_t = new StructType('EncodedNft', [
  */
 export class ElrondHelper
     implements
-        ChainListener<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent>,
-        ChainEmitter<string, void, TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent>
+        ChainListener<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent, TransactionHash>,
+        ChainEmitter<string, void, TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent>,
+        ChainIdentifier
 {
     private readonly provider: ProxyProvider;
     private readonly sender: Account;
@@ -139,6 +142,8 @@ export class ElrondHelper
     private readonly mintContract: Address;
     private readonly eventSocket: Socket;
     private readonly codec: BinaryCodec;
+
+    readonly chainIdentifier = "ELROND";
 
     private constructor(
         provider: ProxyProvider,
@@ -158,7 +163,7 @@ export class ElrondHelper
     async eventIter(cb: (event: string) => Promise<void>): Promise<void> {
         this.eventSocket.on(
             'elrond:transfer_event',
-            async (id) => await cb(id)
+            async (id: string) => await cb(id)
         );
     }
 
@@ -199,7 +204,7 @@ export class ElrondHelper
 
     async emittedEventHandler(
         event: TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent
-    ): Promise<void> {
+    ): Promise<TransactionHash> {
         let tx: Transaction;
         if (event instanceof TransferEvent) {
             tx = await this.transferMintVerify(event);
@@ -214,7 +219,10 @@ export class ElrondHelper
         } else {
             throw Error('Unsupported event!');
         }
-        console.log(`Elrond event hash: ${tx.getHash().toString()}`);
+        const hash = tx.getHash();
+        console.log(`Elrond event hash: ${hash.toString()}`);
+
+        return hash;
     }
 
     private async unfreezeVerify({

@@ -1,11 +1,13 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { EventRecord } from '@polkadot/types/interfaces';
+import { EventRecord, Hash } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
 import BigNumber from 'bignumber.js';
 
 import {
     ChainEmitter,
+    ChainIdentifier,
     ChainListener,
     ScCallEvent,
     TransferEvent,
@@ -45,10 +47,13 @@ export class PolkadotPalletHelper
             void,
             TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent
         >,
-        ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent>
+        ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent, Hash>,
+        ChainIdentifier
 {
     private readonly api: ApiPromise;
     private readonly signer: KeyringPair; // TODO: Switch to proper keyringpair
+
+    readonly chainIdentifier = "POLKADOT";
 
     private constructor(api: ApiPromise, signer: KeyringPair) {
         this.api = api;
@@ -188,74 +193,82 @@ export class PolkadotPalletHelper
 
     async emittedEventHandler(
         event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent
-    ): Promise<void> {
+    ): Promise<Hash> {
+        let block;
         if (event instanceof UnfreezeEvent) {
-            await this.unfreeze(event);
+            block = await this.unfreeze(event);
         } else if (event instanceof ScCallEvent) {
-            await this.sccall(event);
+            block = await this.sccall(event);
         } else if (event instanceof TransferEvent) {
-            await this.send_wrap(event);
+            block = await this.send_wrap(event);
         } else if (event instanceof UnfreezeUniqueEvent) {
-            await this.unfreeze_nft(event);
+            block = await this.unfreeze_nft(event);
         } else if (event instanceof TransferUniqueEvent) {
-            await this.send_wrap_nft(event);
+            block = await this.send_wrap_nft(event);
+        } else {
+            throw Error(`unhandled event ${event}` )
         }
+
+        return block;
     }
 
-    private async unfreeze(event: UnfreezeEvent): Promise<void> {
+    private async resolve_block(ext: SubmittableExtrinsic<"promise">): Promise<Hash> {
+        return await new Promise((res, rej) => ext.signAndSend(this.signer, (result) => {
+            result.isInBlock && res(result.status.asInBlock);
+            result.isError && rej()
+        }));
+    }
+
+    private async unfreeze(event: UnfreezeEvent): Promise<Hash> {
         console.log(`unfreeze! to: ${event.to}, value: ${event.value}`);
-        await this.api.tx.freezer
+        return await this.resolve_block(
+            this.api.tx.freezer
             .unfreezeVerify(
                 event.id.toString(),
                 event.to,
                 event.value.toString()
             )
-            .signAndSend(this.signer, (result) => {
-                console.log(`unfreeze verify:`, result.status);
-            });
+        )
     }
 
-    private async sccall(_event: ScCallEvent): Promise<void> {
+    private async sccall(_event: ScCallEvent): Promise<Hash> {
         //pub fn sc_call_verify(&mut self, action_id: String, to: AccountId, value: Balance, endpoint: [u8; 4], args: Vec<Vec<u8>>)
         throw Error('unimplimented');
     }
 
-    private async unfreeze_nft(event: UnfreezeUniqueEvent): Promise<void> {
+    private async unfreeze_nft(event: UnfreezeUniqueEvent): Promise<Hash> {
         console.log(`unfreeze_nft! to: ${event.to}`);
-        await this.api.tx.freezer
+        return await this.resolve_block(
+            this.api.tx.freezer
             .unfreezeNftVerify(
                 event.id.toString(),
                 event.to,
                 event.nft_id
             )
-            .signAndSend(this.signer, (result) => {
-                console.log(`unfreeze nft: ${result.status}`)
-            })
+        )
     }
 
-    private async send_wrap(event: TransferEvent): Promise<void> {
+    private async send_wrap(event: TransferEvent): Promise<Hash> {
         console.log(`send_wrap! to: ${event.to}, value: ${event.value}`);
-        await this.api.tx.freezer
+        return await this.resolve_block(
+            this.api.tx.freezer
             .transferWrappedVerify(
                 event.action_id.toString(),
                 event.to,
                 event.value.toString()
             )
-            .signAndSend(this.signer, (result) => {
-                console.log(`send wrap: `, result.status);
-            });
+        );
     }
 
-    private async send_wrap_nft(event: TransferUniqueEvent): Promise<void> {
+    private async send_wrap_nft(event: TransferUniqueEvent): Promise<Hash> {
         console.log(`send wrap nft! to: ${event.to}`);
-        await this.api.tx.freezer
+        return await this.resolve_block(
+            this.api.tx.freezer
             .transferWrappedNftVerify(
                 event.action_id.toString(),
                 event.to,
                 `0x${toHex(event.id)}`
             )
-            .signAndSend(this.signer, (result) => {
-                console.log(`send wrap nft: ${result.status}`);
-            });
+        )
     }
 }

@@ -4,6 +4,7 @@
  * `target blockchain`: The blockchain with wrapped tokens
  */
 import BigNumber from 'bignumber.js';
+import { TxnSocketServe } from './socket';
 /**
  * An event indicating a cross chain transfer of assets
  * indicates that X tokens were locked in source blockchain
@@ -49,6 +50,9 @@ export declare class ScCallEvent {
     readonly args?: string[];
     constructor(action_id: BigNumber, to: string, value: BigNumber, endpoint: string, args?: string[]);
 }
+export interface ChainIdentifier {
+    readonly chainIdentifier: string;
+}
 /**
  * A blockchain which can emit supported events
  *
@@ -76,17 +80,21 @@ export interface ChainEmitter<EmissionEvent, Iter, SupportedEvents> {
  *
  * [listener] should be able to handle all the events [emitter] emits
  */
-export declare function emitEvents<Event, Iter, Handlers>(emitter: ChainEmitter<Event, Iter, Handlers>, listener: ChainListener<Handlers>): Promise<void>;
+export declare function emitEvents<Event, Iter, Handlers, Tx extends IntoString>(io: TxnSocketServe, emitter: ChainEmitter<Event, Iter, Handlers>, listener: ChainListener<Handlers, Tx> & ChainIdentifier): Promise<void>;
+interface IntoString {
+    toString(): string;
+}
 /**
  * A blockchain which can handle supported events
  *
  * @template SupportedEvents Events that this blockchain handles, a subset of [[TransferEvent]], [[UnfreezeEvent]], [[ScCallEvent]]
  */
-export interface ChainListener<SupportedEvents> {
+export interface ChainListener<SupportedEvents, TxnHash> {
     /**
      * Handle an event
      *
      * @param event supported event
      */
-    emittedEventHandler(event: SupportedEvents): Promise<void>;
+    emittedEventHandler(event: SupportedEvents): Promise<TxnHash>;
 }
+export {};

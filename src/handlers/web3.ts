@@ -15,7 +15,7 @@ type SolEvent = {
 	readonly value: BigNumber;
 };
 
-export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent> {
+export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent, string> {
     readonly mintContract: Contract;
 
     private constructor(mintContract: Contract) {
@@ -51,7 +51,7 @@ export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | 
 		}
 	}
 
-    async emittedEventHandler(event: TransferEvent | UnfreezeEvent): Promise<void> {
+    async emittedEventHandler(event: TransferEvent | UnfreezeEvent): Promise<string> {
 		let kind: string;
 		let action: string;
 		let tx: providers.TransactionResponse;
@@ -70,5 +70,7 @@ export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | 
 	
 		await tx.wait();
 		console.log(`web3 ${kind} action_id: ${action}, executed`);
+
+		return tx.hash;
     }
 }

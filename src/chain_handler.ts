@@ -5,6 +5,7 @@
  */
 
 import BigNumber from 'bignumber.js';
+import { TxnSocketServe } from './socket';
 
 /**
  * An event indicating a cross chain transfer of assets
@@ -89,6 +90,10 @@ export class ScCallEvent {
     }
 }
 
+export interface ChainIdentifier {
+    readonly chainIdentifier: string;
+}
+
 /**
  * A blockchain which can emit supported events
  * 
@@ -117,17 +122,31 @@ export interface ChainEmitter<EmissionEvent, Iter, SupportedEvents> {
  * 
  * [listener] should be able to handle all the events [emitter] emits
  */
-export async function emitEvents<Event, Iter, Handlers>(
+export async function emitEvents<Event, Iter, Handlers, Tx extends IntoString>(
+    io: TxnSocketServe,
     emitter: ChainEmitter<Event, Iter, Handlers>,
-    listener: ChainListener<Handlers>
+    listener: ChainListener<Handlers, Tx> & ChainIdentifier
 ): Promise<void> {
     emitter.eventIter(async (event) => {
         if (event == undefined) {
             return;
         }
         const ev = await emitter.eventHandler(event);
-        ev !== undefined && (await listener.emittedEventHandler(ev));
+        if (ev == undefined) {
+            return;
+        }
+
+        const tx = await listener.emittedEventHandler(ev);
+        if (ev instanceof TransferUniqueEvent) {
+            io.emit("transfer_nft_event", listener.chainIdentifier, ev, tx.toString());
+        } else if (ev instanceof UnfreezeUniqueEvent) {
+            io.emit("unfreeze_nft_event", listener.chainIdentifier, ev, tx.toString());
+        }
     });
+}
+
+interface IntoString {
+    toString(): string;
 }
 
 /**
@@ -135,11 +154,11 @@ export async function emitEvents<Event, Iter, Handlers>(
  * 
  * @template SupportedEvents Events that this blockchain handles, a subset of [[TransferEvent]], [[UnfreezeEvent]], [[ScCallEvent]]
  */
-export interface ChainListener<SupportedEvents> {
+export interface ChainListener<SupportedEvents, TxnHash> {
     /**
      * Handle an event
      * 
      * @param event supported event
      */
-    emittedEventHandler(event: SupportedEvents): Promise<void>;
+    emittedEventHandler(event: SupportedEvents): Promise<TxnHash>;
 }
