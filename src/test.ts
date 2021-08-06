@@ -41,9 +41,15 @@ async function web3TestHelper(): Promise<Web3Helper> {
 }
 
 function testSocketServer(): TxnSocketServe {
+	console.log("WARN: using permissive cors");
 	const httpServ = createServer();
 
-	const io = txEventSocket(httpServ);
+	const io = txEventSocket(httpServ, {
+		path: "/txsocket/socket.io",
+		cors: {
+			origin: "*"
+		}
+	});
 
 	httpServ.listen(config.tx_port, () => console.log(`tx socket listening @${config.tx_port}`));
 

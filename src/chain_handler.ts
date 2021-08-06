@@ -138,9 +138,9 @@ export async function emitEvents<Event, Iter, Handlers, Tx extends IntoString>(
 
         const tx = await listener.emittedEventHandler(ev);
         if (ev instanceof TransferUniqueEvent) {
-            io.emit("transfer_nft_event", listener.chainIdentifier, ev, tx.toString());
+            io.emit("transfer_nft_event", listener.chainIdentifier, ev.action_id.toString(), tx.toString());
         } else if (ev instanceof UnfreezeUniqueEvent) {
-            io.emit("unfreeze_nft_event", listener.chainIdentifier, ev, tx.toString());
+            io.emit("unfreeze_nft_event", listener.chainIdentifier, ev.id.toString(), tx.toString());
         }
     });
 }
