@@ -19,6 +19,7 @@ async function polkadotTestHelper(): Promise<PolkadotPalletHelper> {
 	);
 }
 
+//@ts-expect-error stfu
 async function elrondTestHelper(): Promise<ElrondHelper> {
     const aliceE = await fs.promises.readFile(config.private_key, "utf-8");
 	return await ElrondHelper.new(
@@ -29,14 +30,14 @@ async function elrondTestHelper(): Promise<ElrondHelper> {
 	);
 }
 
-//@ts-expect-error stfu
 async function web3TestHelper(): Promise<Web3Helper> {
 	return await Web3Helper.new(
 		config.heco_node,
 		config.heco_pkey,
 		config.heco_minter,
 		//@ts-expect-error minter abi
-		abi
+		abi,
+		"BSC",
 	);
 }
 
@@ -66,7 +67,7 @@ async function listen2way<E1, E2, I, H, Tx1, Tx2>(io: TxnSocketServe, b1: TwoWay
 
 const main = async () => {
 	const io = testSocketServer();
-	listen2way(io, await polkadotTestHelper(), await elrondTestHelper());
+	listen2way(io, await polkadotTestHelper(), await web3TestHelper());
     console.log('READY TO LISTEN EVENTS!');
 };
 

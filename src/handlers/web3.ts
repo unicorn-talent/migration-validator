@@ -1,7 +1,8 @@
 import BigNumber from "bignumber.js";
 import { Contract, providers, Wallet } from "ethers";
+import { Networkish } from "@ethersproject/networks";
 import { Interface } from "ethers/lib/utils";
-import { ChainEmitter, ChainListener, TransferEvent, UnfreezeEvent } from "../chain_handler";
+import { ChainEmitter, ChainListener, ChainIdentifier, TransferEvent, UnfreezeEvent } from "../chain_handler";
 
 enum SolEventT {
 	Unfreeze,
@@ -15,20 +16,22 @@ type SolEvent = {
 	readonly value: BigNumber;
 };
 
-export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent, string> {
+export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent, string>, ChainIdentifier {
     readonly mintContract: Contract;
+	readonly chainIdentifier: string;
 
-    private constructor(mintContract: Contract) {
+    private constructor(mintContract: Contract, chainIdentifier: string) {
         this.mintContract = mintContract;
+		this.chainIdentifier = chainIdentifier;
     }
 
-    public static new = async function(provider_uri: string, pkey: string, minter: string, minterAbi: Interface): Promise<Web3Helper> {
-        const w3 = new providers.JsonRpcProvider(provider_uri);
+    public static new = async function(provider_uri: string, pkey: string, minter: string, minterAbi: Interface, chainIdentifier: string = "WEB3", networkOpts?: Networkish): Promise<Web3Helper> {
+        const w3 = new providers.JsonRpcProvider(provider_uri, networkOpts);
 		await w3.ready;
         const acc = (new Wallet(pkey)).connect(w3);
         const mint = new Contract(minter, minterAbi, acc);
 
-        return new Web3Helper(mint);
+        return new Web3Helper(mint, chainIdentifier);
     }
 
 	async eventIter(cb: ((event: SolEvent) => Promise<void>)): Promise<void> {
