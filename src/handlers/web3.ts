@@ -1,6 +1,6 @@
 import { Networkish } from "@ethersproject/networks";
 import BigNumber from "bignumber.js";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers, Wallet, BigNumber as EthBN } from "ethers";
 import { Interface } from "ethers/lib/utils";
 import { ChainEmitter, ChainIdentifier, ChainListener, TransferEvent, UnfreezeEvent } from "../chain_handler";
 
@@ -36,12 +36,12 @@ export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | 
     }
 
 	async eventIter(cb: ((event: SolEvent) => Promise<void>)): Promise<void> {
-		this.mintContract.on('Unfreeze', async (action_id: BigNumber, chain_nonce: BigNumber, to: string, value: BigNumber) => {
-			const ev = { type: SolEventT.Unfreeze, action_id, chain_nonce,  to, value };
+		this.mintContract.on('Unfreeze', async (action_id: EthBN, chain_nonce: EthBN, to: string, value: BigNumber) => {
+			const ev = { type: SolEventT.Unfreeze, action_id: new BigNumber(action_id.toString()), chain_nonce: new BigNumber(chain_nonce.toString()), to, value };
 			await cb(ev);
 		});
-		this.mintContract.on('Transfer', async (action_id: BigNumber, chain_nonce: BigNumber, to: string, value: BigNumber) => {
-			const ev = { type: SolEventT.Transfer, action_id, chain_nonce, to, value };
+		this.mintContract.on('Transfer', async (action_id: EthBN, chain_nonce: EthBN, to: string, value: BigNumber) => {
+			const ev = { type: SolEventT.Transfer, action_id: new BigNumber(action_id.toString()), chain_nonce: new BigNumber(chain_nonce.toString()), to, value };
 			await cb(ev);
 		});
 	}
