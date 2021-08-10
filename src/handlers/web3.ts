@@ -55,14 +55,14 @@ export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | 
 		}
 	}
 
-    async emittedEventHandler(event: TransferEvent | UnfreezeEvent): Promise<string> {
+    async emittedEventHandler(event: TransferEvent | UnfreezeEvent, origin_nonce: number): Promise<string> {
 		let kind: string;
 		let action: string;
 		let tx: providers.TransactionResponse;
 		if (event instanceof TransferEvent) {
 			action = event.action_id.toString();
 			console.log(`target: ${event.to}, value: ${event.value}`)
-            tx = await this.mintContract.validate_transfer(action, event.chain_nonce, event.to, event.value.toString());
+            tx = await this.mintContract.validate_transfer(action, origin_nonce, event.to, event.value.toString());
 			kind = "transfer"
         } else if (event instanceof UnfreezeEvent) {
 			action = event.id.toString();

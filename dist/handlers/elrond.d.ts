@@ -28,7 +28,7 @@ export declare class ElrondHelper implements ChainListener<TransferEvent | Trans
      */
     static new: (node_uri: string, secret_key: string, minter: string, socket: Socket) => Promise<ElrondHelper>;
     eventHandler(id: string): Promise<TransferEvent | TransferUniqueEvent | UnfreezeUniqueEvent | UnfreezeEvent | undefined>;
-    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent): Promise<TransactionHash>;
+    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent, origin_nonce: number): Promise<TransactionHash>;
     private unfreezeVerify;
     private unfreezeNftVerify;
     private transferNftVerify;

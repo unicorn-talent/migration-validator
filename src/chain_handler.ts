@@ -125,8 +125,8 @@ export async function emitEvents<Handlers extends MultiChainEvent>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const map: ChainMap<any, any, Handlers, IntoString> = {};
 
-    const handleEvent = async (listener: ChainListener<Handlers, IntoString> & ChainIdentifier, event: Handlers) => {
-        const tx = await listener.emittedEventHandler(event);
+    const handleEvent = async (listener: ChainListener<Handlers, IntoString> & ChainIdentifier, event: Handlers, origin_nonce: number) => {
+        const tx = await listener.emittedEventHandler(event, origin_nonce);
         if (event instanceof TransferUniqueEvent) {
             io.emit("transfer_nft_event", listener.chainNonce, event.action_id.toString(), tx.toString());
         } else if (event instanceof UnfreezeUniqueEvent) {
@@ -153,7 +153,7 @@ export async function emitEvents<Handlers extends MultiChainEvent>(
             if (target === undefined) {
                 throw Error(`Unsupported Chain Nonce: ${ev.chain_nonce}`); // TODO: Revert transaction
             }
-            handleEvent(target, ev);
+            handleEvent(target, ev, emitter.chainNonce);
         });
     }
 
@@ -181,5 +181,5 @@ export interface ChainListener<SupportedEvents, TxnHash> {
      * 
      * @param event supported event
      */
-    emittedEventHandler(event: SupportedEvents): Promise<TxnHash>;
+    emittedEventHandler(event: SupportedEvents, origin_nonce: number): Promise<TxnHash>;
 }

@@ -179,13 +179,14 @@ export class PolkadotPalletHelper
     }
 
     async emittedEventHandler(
-        event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent 
+        event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent,
+        origin_nonce: number
     ): Promise<Hash> {
         let block;
         if (event instanceof UnfreezeEvent) {
             block = await this.unfreeze(event);
         } else if (event instanceof TransferEvent) {
-            block = await this.send_wrap(event);
+            block = await this.send_wrap(event, origin_nonce);
         } else if (event instanceof UnfreezeUniqueEvent) {
             block = await this.unfreeze_nft(event);
         } else if (event instanceof TransferUniqueEvent) {
@@ -228,13 +229,13 @@ export class PolkadotPalletHelper
         )
     }
 
-    private async send_wrap(event: TransferEvent): Promise<Hash> {
+    private async send_wrap(event: TransferEvent, origin_nonce: number): Promise<Hash> {
         console.log(`send_wrap! to: ${event.to}, value: ${event.value}`);
         return await this.resolve_block(
             this.api.tx.freezer
             .transferWrappedVerify(
                 event.action_id.toString(),
-                event.chain_nonce,
+                origin_nonce,
                 event.to,
                 event.value.toString()
             )

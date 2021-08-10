@@ -187,15 +187,16 @@ export class ElrondHelper
     }
 
     async emittedEventHandler(
-        event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent
+        event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent,
+        origin_nonce: number
     ): Promise<TransactionHash> {
         let tx: Transaction;
         if (event instanceof TransferEvent) {
-            tx = await this.transferMintVerify(event);
+            tx = await this.transferMintVerify(event, origin_nonce);
         } else if (event instanceof UnfreezeEvent) {
             tx = await this.unfreezeVerify(event);
         } else if (event instanceof TransferUniqueEvent) {
-            tx = await this.transferNftVerify(event);
+            tx = await this.transferNftVerify(event, origin_nonce);
         } else if (event instanceof UnfreezeUniqueEvent) {
             tx = await this.unfreezeNftVerify(event);
         } else {
@@ -262,10 +263,9 @@ export class ElrondHelper
 
     private async transferNftVerify({
         action_id,
-        chain_nonce,
         to,
         id
-    }: TransferUniqueEvent): Promise<Transaction> {
+    }: TransferUniqueEvent, origin_nonce: number): Promise<Transaction> {
         await this.sender.sync(this.provider);
 
         const tx = new Transaction({
@@ -275,7 +275,7 @@ export class ElrondHelper
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('validateSendNft'))
                 .addArg(new BigUIntValue(action_id))
-                .addArg(new U64Value(new BigNumber(chain_nonce)))
+                .addArg(new U64Value(new BigNumber(origin_nonce)))
                 .addArg(new AddressValue(new Address(to)))
                 .addArg(BytesValue.fromHex(toHex(id)))
                 .build()
@@ -289,10 +289,9 @@ export class ElrondHelper
 
     private async transferMintVerify({
         action_id,
-        chain_nonce,
         to,
         value,
-    }: TransferEvent): Promise<Transaction> {
+    }: TransferEvent, origin_nonce: number): Promise<Transaction> {
         await this.sender.sync(this.provider);
 
         const tx = new Transaction({
@@ -302,7 +301,7 @@ export class ElrondHelper
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('validateSendWrapped'))
                 .addArg(new BigUIntValue(action_id))
-                .addArg(new U64Value(new BigNumber(chain_nonce)))
+                .addArg(new U64Value(new BigNumber(origin_nonce)))
                 .addArg(new AddressValue(new Address(to)))
                 .addArg(new U32Value(value))
                 .build(),

@@ -9,7 +9,7 @@ const config = {
         '../XP.network-Elrond-Migration/elrond-mint-contract/wallets/users/alice.pem',
     // Elrond minter contract address
     elrond_minter:
-        'erd1qqqqqqqqqqqqqpgqcpnh6s5wl0aqg78vy2avkhkzvstyc62ed8ss9lk4l3',
+        'erd1qqqqqqqqqqqqqpgq5hj37jkmfmv8l4tu2szwl3azsksmn5gsd8sstwgrpg',
     // Substrate Freezer Contract address
     xp_freezer: '5EzHKhoRojLTuKEetgqY7TNDTNFUeLD9cU8si2xVVGLAnbcj',
     // Workaround Elrond Event websocket

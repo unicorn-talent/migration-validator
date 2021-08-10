@@ -92,6 +92,6 @@ export interface ChainListener<SupportedEvents, TxnHash> {
      *
      * @param event supported event
      */
-    emittedEventHandler(event: SupportedEvents): Promise<TxnHash>;
+    emittedEventHandler(event: SupportedEvents, origin_nonce: number): Promise<TxnHash>;
 }
 export {};

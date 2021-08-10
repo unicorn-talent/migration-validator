@@ -24,7 +24,7 @@ export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, v
      */
     static new: (node_uri: string, signer: KeyringPair) => Promise<PolkadotPalletHelper>;
     eventHandler(ev: EventRecord): Promise<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined>;
-    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent): Promise<Hash>;
+    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent, origin_nonce: number): Promise<Hash>;
     private resolve_block;
     private unfreeze;
     private unfreeze_nft;
