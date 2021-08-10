@@ -11,7 +11,7 @@ import { ChainEmitter, ChainIdentifier, ChainListener, TransferEvent, TransferUn
 export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, void, TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent>, ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent, Hash>, ChainIdentifier {
     private readonly api;
     private readonly signer;
-    readonly chainNonce = 0;
+    readonly chainNonce = 1;
     private constructor();
     eventIter(cb: (event: EventRecord) => Promise<void>): Promise<void>;
     /**

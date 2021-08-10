@@ -43,7 +43,7 @@ async function elrondTestHelper() {
 async function web3TestHelper() {
     return await index_1.Web3Helper.new(config_1.default.heco_node, config_1.default.heco_pkey, config_1.default.heco_minter, 
     //@ts-expect-error minter abi
-    Minter_json_1.abi, 0x2);
+    Minter_json_1.abi, 0x3);
 }
 function testSocketServer() {
     console.log("WARN: using permissive cors");

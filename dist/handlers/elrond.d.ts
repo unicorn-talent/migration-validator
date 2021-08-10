@@ -15,7 +15,7 @@ export declare class ElrondHelper implements ChainListener<TransferEvent | Trans
     private readonly mintContract;
     private readonly eventSocket;
     private readonly codec;
-    readonly chainNonce = 1;
+    readonly chainNonce = 2;
     private constructor();
     eventIter(cb: (event: string) => Promise<void>): Promise<void>;
     /**

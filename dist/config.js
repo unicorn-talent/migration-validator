@@ -5,13 +5,11 @@ const config = {
     // Substrate Node Uri
     xnode: 'ws://localhost:9944',
     // Elrond Node Proxy Uri
-    elrond_node: 'http://localhost:7950',
+    elrond_node: 'https://devnet-api.elrond.com',
     // Private Key File
-    private_key: '../XP.network-Elrond-Migration/elrond-mint-contract/wallets/users/alice.pem',
+    private_key: '../XP.network-Elrond-Migration/erd1yflgh7duhhvpkqkqqjrcnz7j6pqnhy8kepglkk6k8h8dfu3as3ysdcxan8.pem',
     // Elrond minter contract address
-    elrond_minter: 'erd1qqqqqqqqqqqqqpgq5hj37jkmfmv8l4tu2szwl3azsksmn5gsd8sstwgrpg',
-    // Substrate Freezer Contract address
-    xp_freezer: '5EzHKhoRojLTuKEetgqY7TNDTNFUeLD9cU8si2xVVGLAnbcj',
+    elrond_minter: 'erd1qqqqqqqqqqqqqpgqfy5zmm64avweyq3rcw65xczwkwedfz5zs3ysmja8la',
     // Workaround Elrond Event websocket
     elrond_ev_socket: 'ws://localhost:3000',
     heco_node: "http://localhost:8545",
@@ -19,4 +17,4 @@ const config = {
     heco_minter: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
 };
 exports.default = config;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY29uZmlnLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vc3JjL2NvbmZpZy50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOztBQUFBLE1BQU0sTUFBTSxHQUFHO0lBQ1gsT0FBTyxFQUFFLElBQUk7SUFDYixxQkFBcUI7SUFDckIsS0FBSyxFQUFFLHFCQUFxQjtJQUM1Qix3QkFBd0I7SUFDeEIsV0FBVyxFQUFFLHVCQUF1QjtJQUNwQyxtQkFBbUI7SUFDbkIsV0FBVyxFQUNQLDZFQUE2RTtJQUNqRixpQ0FBaUM7SUFDakMsYUFBYSxFQUNULGdFQUFnRTtJQUNwRSxxQ0FBcUM7SUFDckMsVUFBVSxFQUFFLGtEQUFrRDtJQUM5RCxvQ0FBb0M7SUFDcEMsZ0JBQWdCLEVBQUUscUJBQXFCO0lBQ3ZDLFNBQVMsRUFBRSx1QkFBdUI7SUFDbEMsU0FBUyxFQUFFLG9FQUFvRTtJQUMvRSxXQUFXLEVBQUUsNENBQTRDO0NBQzVELENBQUM7QUFFRixrQkFBZSxNQUFNLENBQUEifQ==
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY29uZmlnLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vc3JjL2NvbmZpZy50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOztBQUFBLE1BQU0sTUFBTSxHQUFHO0lBQ1gsT0FBTyxFQUFFLElBQUk7SUFDYixxQkFBcUI7SUFDckIsS0FBSyxFQUFFLHFCQUFxQjtJQUM1Qix3QkFBd0I7SUFDeEIsV0FBVyxFQUFFLCtCQUErQjtJQUM1QyxtQkFBbUI7SUFDbkIsV0FBVyxFQUNQLG1HQUFtRztJQUN2RyxpQ0FBaUM7SUFDakMsYUFBYSxFQUNULGdFQUFnRTtJQUNwRSxvQ0FBb0M7SUFDcEMsZ0JBQWdCLEVBQUUscUJBQXFCO0lBQ3ZDLFNBQVMsRUFBRSx1QkFBdUI7SUFDbEMsU0FBUyxFQUFFLG9FQUFvRTtJQUMvRSxXQUFXLEVBQUUsNENBQTRDO0NBQzVELENBQUM7QUFFRixrQkFBZSxNQUFNLENBQUEifQ==

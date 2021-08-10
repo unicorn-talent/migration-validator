@@ -51,7 +51,7 @@ export class PolkadotPalletHelper
     private readonly api: ApiPromise;
     private readonly signer: KeyringPair; // TODO: Switch to proper keyringpair
 
-    readonly chainNonce = 0x0;
+    readonly chainNonce = 0x1;
 
     private constructor(api: ApiPromise, signer: KeyringPair) {
         this.api = api;
@@ -234,8 +234,8 @@ export class PolkadotPalletHelper
         return await this.resolve_block(
             this.api.tx.freezer
             .transferWrappedVerify(
+				origin_nonce,
                 event.action_id.toString(),
-                origin_nonce,
                 event.to,
                 event.value.toString()
             )

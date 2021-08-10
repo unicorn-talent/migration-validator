@@ -35,7 +35,7 @@ async function web3TestHelper(): Promise<Web3Helper> {
 		config.heco_minter,
 		//@ts-expect-error minter abi
 		abi,
-		0x2,
+		0x3,
 	);
 }
 

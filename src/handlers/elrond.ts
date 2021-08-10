@@ -127,7 +127,7 @@ export class ElrondHelper
     private readonly eventSocket: Socket;
     private readonly codec: BinaryCodec;
 
-    readonly chainNonce = 0x1;
+    readonly chainNonce = 0x2;
 
     private constructor(
         provider: ProxyProvider,
@@ -345,7 +345,7 @@ export class ElrondHelper
                     .valueOf().evunfreeze;
                 return new UnfreezeEvent(
                     new BigNumber(id),
-                    (unfreeze['chain_nonce'].valueOf() as BigNumber).toNumber(),
+                    parseInt(unfreeze['chain_nonce'].toString()),
                     Buffer.from(unfreeze['to']).toString(),
                     new BigNumber(Number(unfreeze['value'] as BigInt))
                 );
@@ -357,7 +357,7 @@ export class ElrondHelper
                 
                 return new UnfreezeUniqueEvent(
                     new BigNumber(id),
-                    (unfreeze_nft['chain_nonce'].valueOf() as BigNumber).toNumber(),
+                    parseInt(unfreeze_nft['chain_nonce'].toString()),
                     Buffer.from(unfreeze_nft['to']).toString(),
                     Buffer.from(unfreeze_nft['id'])
                 )
@@ -368,7 +368,7 @@ export class ElrondHelper
                     .valueOf().evtransfer;
                 return new TransferEvent(
                     new BigNumber(id),
-                    (transfer['chain_nonce'].valueOf() as BigNumber).toNumber(),
+                    parseInt(transfer['chain_nonce'].toString()),
                     Buffer.from(transfer['to']).toString(),
                     new BigNumber(Number(transfer['value'] as BigInt))
                 );
@@ -392,7 +392,7 @@ export class ElrondHelper
                 
                 return new TransferUniqueEvent(
                     new BigNumber(id),
-                    (transfer_nft['chain_nonce'].valueOf() as BigNumber).toNumber(),
+                    parseInt(transfer_nft['chain_nonce'].toString()),
                     Buffer.from(transfer_nft['to']).toString(),
                     Uint8Array.from(encoded_info)
                 );

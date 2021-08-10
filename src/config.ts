@@ -3,15 +3,13 @@ const config = {
     // Substrate Node Uri
     xnode: 'ws://localhost:9944',
     // Elrond Node Proxy Uri
-    elrond_node: 'http://localhost:7950',
+    elrond_node: 'https://devnet-api.elrond.com',
     // Private Key File
     private_key:
-        '../XP.network-Elrond-Migration/elrond-mint-contract/wallets/users/alice.pem',
+        '../XP.network-Elrond-Migration/erd1yflgh7duhhvpkqkqqjrcnz7j6pqnhy8kepglkk6k8h8dfu3as3ysdcxan8.pem',
     // Elrond minter contract address
     elrond_minter:
-        'erd1qqqqqqqqqqqqqpgq5hj37jkmfmv8l4tu2szwl3azsksmn5gsd8sstwgrpg',
-    // Substrate Freezer Contract address
-    xp_freezer: '5EzHKhoRojLTuKEetgqY7TNDTNFUeLD9cU8si2xVVGLAnbcj',
+        'erd1qqqqqqqqqqqqqpgqfy5zmm64avweyq3rcw65xczwkwedfz5zs3ysmja8la',
     // Workaround Elrond Event websocket
     elrond_ev_socket: 'ws://localhost:3000',
     heco_node: "http://localhost:8545",
