@@ -13,25 +13,29 @@ import { TxnSocketServe } from './socket';
  * 
  * @param value number of tokens locked in source blockchain
  */
-export class TransferEvent {
+export class TransferEvent implements MultiChainEvent {
     readonly action_id: BigNumber;
+    readonly chain_nonce: number;
     readonly to: string;
     readonly value: BigNumber;
 
-    constructor(action_id: BigNumber, to: string, value: BigNumber) {
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, value: BigNumber) {
         this.action_id = action_id;
+        this.chain_nonce = chain_nonce;
         this.to = to;
         this.value = value;
     }
 }
 
-export class TransferUniqueEvent {
+export class TransferUniqueEvent implements MultiChainEvent {
     readonly action_id: BigNumber;
+    readonly chain_nonce: number;
     readonly to: string;
     readonly id: Uint8Array;
 
-    constructor(action_id: BigNumber, to: string, id: Uint8Array) {
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array) {
         this.action_id = action_id;
+        this.chain_nonce = chain_nonce;
         this.to = to;
         this.id = id;
     }
@@ -41,57 +45,40 @@ export class TransferUniqueEvent {
  * An event indicating wrapped tokens were burnt in the target blockchain
  * indicates that X tokens are ready to be released in the source blockchain
  */
-export class UnfreezeEvent {
+export class UnfreezeEvent implements MultiChainEvent {
     readonly id: BigNumber;
+    readonly chain_nonce: number;
     readonly to: string;
     readonly value: BigNumber;
 
-    constructor(action_id: BigNumber, to: string, value: BigNumber) {
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, value: BigNumber) {
         this.id = action_id;
+        this.chain_nonce = chain_nonce;
         this.to = to;
         this.value = value;
     }
 }
 
-export class UnfreezeUniqueEvent {
+export class UnfreezeUniqueEvent implements MultiChainEvent {
     readonly id: BigNumber;
+    readonly chain_nonce: number;
     readonly to: string;
     readonly nft_id: Uint8Array;
 
-    constructor(action_id: BigNumber, to: string, id: Uint8Array) {
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array) {
         this.id = action_id;
+        this.chain_nonce = chain_nonce;
         this.to = to;
         this.nft_id = id;
     }
 }
 
-/**
- * An event indicating a request to call another smart contract in target blockchain
- */
-export class ScCallEvent {
-    readonly action_id: BigNumber;
-    readonly to: string;
-    readonly value: BigNumber;
-    readonly endpoint: string;
-    readonly args?: string[];
-
-    constructor(
-        action_id: BigNumber,
-        to: string,
-        value: BigNumber,
-        endpoint: string,
-        args?: string[]
-    ) {
-        this.action_id = action_id;
-        this.to = to;
-        this.value = value;
-        this.endpoint = endpoint;
-        this.args = args;
-    }
+export interface MultiChainEvent {
+    readonly chain_nonce: number;
 }
 
 export interface ChainIdentifier {
-    readonly chainIdentifier: string;
+    readonly chainNonce: number;
 }
 
 /**
@@ -117,32 +104,66 @@ export interface ChainEmitter<EmissionEvent, Iter, SupportedEvents> {
     eventHandler(event: EmissionEvent): Promise<SupportedEvents | undefined>;
 }
 
+type FullChain<Event, Iter, Handlers, Tx extends IntoString> = ChainEmitter<Event, Iter, Handlers> &
+    ChainListener<Handlers, Tx> &
+    ChainIdentifier;
+
+type ChainMap<Event, Iter, Handlers, Tx extends IntoString> = {
+    [index: number]: FullChain<Event, Iter, Handlers, Tx>;
+}
+
 /**
  * Start a bridge connection between emitter & listener
  * 
  * [listener] should be able to handle all the events [emitter] emits
  */
-export async function emitEvents<Event, Iter, Handlers, Tx extends IntoString>(
+export async function emitEvents<Handlers extends MultiChainEvent>(
     io: TxnSocketServe,
-    emitter: ChainEmitter<Event, Iter, Handlers>,
-    listener: ChainListener<Handlers, Tx> & ChainIdentifier
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    chains: Array<FullChain<any, any, Handlers, IntoString>>
 ): Promise<void> {
-    emitter.eventIter(async (event) => {
-        if (event == undefined) {
-            return;
-        }
-        const ev = await emitter.eventHandler(event);
-        if (ev == undefined) {
-            return;
-        }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const map: ChainMap<any, any, Handlers, IntoString> = {};
 
-        const tx = await listener.emittedEventHandler(ev);
-        if (ev instanceof TransferUniqueEvent) {
-            io.emit("transfer_nft_event", listener.chainIdentifier, ev.action_id.toString(), tx.toString());
-        } else if (ev instanceof UnfreezeUniqueEvent) {
-            io.emit("unfreeze_nft_event", listener.chainIdentifier, ev.id.toString(), tx.toString());
+    const handleEvent = async (listener: ChainListener<Handlers, IntoString> & ChainIdentifier, event: Handlers) => {
+        const tx = await listener.emittedEventHandler(event);
+        if (event instanceof TransferUniqueEvent) {
+            io.emit("transfer_nft_event", listener.chainNonce, event.action_id.toString(), tx.toString());
+        } else if (event instanceof UnfreezeUniqueEvent) {
+            io.emit("unfreeze_nft_event", listener.chainNonce, event.id.toString(), tx.toString());
         }
-    });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const listenEvents = (emitter: ChainEmitter<any, any, Handlers> & ChainIdentifier) => {
+        emitter.eventIter(async (event) => {
+            if (event === undefined) {
+                return;
+            }
+            const ev = await emitter.eventHandler(event);
+            if (ev === undefined) {
+                return;
+            }
+
+            if (ev.chain_nonce === emitter.chainNonce) {
+                throw Error("Chain Nonce is the same"); // TODO: Revert transaction
+            }
+
+            const target = map[ev.chain_nonce];
+            if (target === undefined) {
+                throw Error(`Unsupported Chain Nonce: ${ev.chain_nonce}`); // TODO: Revert transaction
+            }
+            handleEvent(target, ev);
+        });
+    }
+
+    for (const chain of chains) {
+        if (map[chain.chainNonce] !== undefined) {
+            throw Error("Duplicate chain nonce!")
+        }
+        map[chain.chainNonce] = chain;
+        listenEvents(chain);
+    }
 }
 
 interface IntoString {

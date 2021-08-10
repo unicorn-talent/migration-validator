@@ -1,8 +1,8 @@
+import { Networkish } from "@ethersproject/networks";
 import BigNumber from "bignumber.js";
 import { Contract, providers, Wallet } from "ethers";
-import { Networkish } from "@ethersproject/networks";
 import { Interface } from "ethers/lib/utils";
-import { ChainEmitter, ChainListener, ChainIdentifier, TransferEvent, UnfreezeEvent } from "../chain_handler";
+import { ChainEmitter, ChainIdentifier, ChainListener, TransferEvent, UnfreezeEvent } from "../chain_handler";
 
 enum SolEventT {
 	Unfreeze,
@@ -12,35 +12,36 @@ enum SolEventT {
 type SolEvent = {
 	readonly type: SolEventT;
 	readonly action_id: BigNumber;
+	readonly chain_nonce: BigNumber,
 	readonly to: string;
 	readonly value: BigNumber;
 };
 
 export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | UnfreezeEvent>, ChainListener<TransferEvent | UnfreezeEvent, string>, ChainIdentifier {
     readonly mintContract: Contract;
-	readonly chainIdentifier: string;
+	readonly chainNonce: number;
 
-    private constructor(mintContract: Contract, chainIdentifier: string) {
+    private constructor(mintContract: Contract, chainNonce: number) {
         this.mintContract = mintContract;
-		this.chainIdentifier = chainIdentifier;
+		this.chainNonce = chainNonce;
     }
 
-    public static new = async function(provider_uri: string, pkey: string, minter: string, minterAbi: Interface, chainIdentifier: string = "WEB3", networkOpts?: Networkish): Promise<Web3Helper> {
+    public static new = async function(provider_uri: string, pkey: string, minter: string, minterAbi: Interface, chainNonce: number, networkOpts?: Networkish): Promise<Web3Helper> {
         const w3 = new providers.JsonRpcProvider(provider_uri, networkOpts);
 		await w3.ready;
         const acc = (new Wallet(pkey)).connect(w3);
         const mint = new Contract(minter, minterAbi, acc);
 
-        return new Web3Helper(mint, chainIdentifier);
+        return new Web3Helper(mint, chainNonce);
     }
 
 	async eventIter(cb: ((event: SolEvent) => Promise<void>)): Promise<void> {
-		this.mintContract.on('Unfreeze', async (action_id: BigNumber, to: string, value: BigNumber) => {
-			const ev = { type: SolEventT.Unfreeze, action_id, to: to, value };
+		this.mintContract.on('Unfreeze', async (action_id: BigNumber, chain_nonce: BigNumber, to: string, value: BigNumber) => {
+			const ev = { type: SolEventT.Unfreeze, action_id, chain_nonce,  to, value };
 			await cb(ev);
 		});
-		this.mintContract.on('Transfer', async (action_id: BigNumber, to: string, value: BigNumber) => {
-			const ev = { type: SolEventT.Transfer, action_id, to: to, value };
+		this.mintContract.on('Transfer', async (action_id: BigNumber, chain_nonce: BigNumber, to: string, value: BigNumber) => {
+			const ev = { type: SolEventT.Transfer, action_id, chain_nonce, to, value };
 			await cb(ev);
 		});
 	}
@@ -48,9 +49,9 @@ export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | 
 	async eventHandler(ev: SolEvent): Promise<TransferEvent | UnfreezeEvent | undefined> {
 		switch (ev.type) {
 			case SolEventT.Unfreeze:
-				return new UnfreezeEvent(ev.action_id, ev.to, ev.value);
+				return new UnfreezeEvent(ev.action_id, ev.chain_nonce.toNumber(), ev.to, ev.value);
 			case SolEventT.Transfer:
-				return new TransferEvent(ev.action_id, ev.to, ev.value);
+				return new TransferEvent(ev.action_id, ev.chain_nonce.toNumber(), ev.to, ev.value);
 		}
 	}
 
@@ -61,7 +62,7 @@ export class Web3Helper implements ChainEmitter<SolEvent, void, TransferEvent | 
 		if (event instanceof TransferEvent) {
 			action = event.action_id.toString();
 			console.log(`target: ${event.to}, value: ${event.value}`)
-            tx = await this.mintContract.validate_transfer(action, event.to, event.value.toString());
+            tx = await this.mintContract.validate_transfer(action, event.chain_nonce, event.to, event.value.toString());
 			kind = "transfer"
         } else if (event instanceof UnfreezeEvent) {
 			action = event.id.toString();

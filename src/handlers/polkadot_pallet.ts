@@ -9,14 +9,12 @@ import {
     ChainEmitter,
     ChainIdentifier,
     ChainListener,
-    ScCallEvent,
     TransferEvent,
     TransferUniqueEvent,
     UnfreezeEvent,
     UnfreezeUniqueEvent,
 } from '../chain_handler';
 import { toHex } from './common';
-import { scCallArgSanitize } from './polkadot';
 
 const REPLACEMENT_CHAR = '\ufffd'
 
@@ -45,15 +43,15 @@ export class PolkadotPalletHelper
         ChainEmitter<
             EventRecord,
             void,
-            TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent
+            TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent
         >,
-        ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent, Hash>,
+        ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent, Hash>,
         ChainIdentifier
 {
     private readonly api: ApiPromise;
     private readonly signer: KeyringPair; // TODO: Switch to proper keyringpair
 
-    readonly chainIdentifier = "POLKADOT";
+    readonly chainNonce = 0x0;
 
     private constructor(api: ApiPromise, signer: KeyringPair) {
         this.api = api;
@@ -83,12 +81,12 @@ export class PolkadotPalletHelper
             provider: provider,
             types: {
                 ActionId: 'u128',
-                TokenId: 'u128',
+                TokenId: 'u64',
                 CommodityId: 'H256',
                 CommodityInfo: 'Vec<u8>',
                 NftId: 'H256',
                 NftInfo: 'Vec<u8>',
-                EgldBalance: 'Balance',
+                Erc1155Balance: 'Balance',
                 Commodity: '(H256, Vec<u8>)',
                 LocalAction: {
                     _enum: {
@@ -123,55 +121,43 @@ export class PolkadotPalletHelper
 
     async eventHandler(
         ev: EventRecord
-    ): Promise<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined> {
+    ): Promise<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined> {
         const event = ev.event;
         switch (event.method) {
             case 'TransferFrozen': {
                 const action_id = new BigNumber(
                     event.data[0].toString() as string
                 );
-                const dest = sanitizeHexData(event.data[1]);
-                const value = new BigNumber(event.data[2].toJSON() as string);
+                const chain_nonce = parseInt(event.data[1].toString());
+                const dest = sanitizeHexData(event.data[2]);
+                const value = new BigNumber(event.data[3].toJSON() as string);
 
-                return new TransferEvent(action_id, dest, value);
+                return new TransferEvent(action_id, chain_nonce, dest, value);
             }
             case 'TransferUniqueFrozen': {
                 const action_id = new BigNumber(
                     event.data[0].toString() as string
                 );
-                const to = sanitizeHexData(event.data[1]);
-                const ident = event.data[2].toU8a();
+                const chain_nonce = parseInt(event.data[1].toString())
+                const to = sanitizeHexData(event.data[2]);
+                const ident = event.data[3].toU8a();
 
                 return new TransferUniqueEvent(
                     action_id,
+                    chain_nonce,
                     to,
                     ident
                 )
-            }
-            case 'ScCall': {
-                const action_id = new BigNumber(
-                    event.data[0].toString() as string
-                );
-                const to = sanitizeHexData(event.data[1]);
-                const endpoint = event.data[2].toJSON() as string;
-                const args = event.data[3].toJSON();
-
-                return new ScCallEvent(
-                    action_id,
-                    to,
-                    new BigNumber(0),
-                    endpoint,
-                    scCallArgSanitize(args)
-                );
             }
             case 'UnfreezeWrapped': {
                 const action_id = new BigNumber(
                     event.data[0].toString() as string
                 );
-                const dest = sanitizeHexData(event.data[1]);
-                const value = new BigNumber(event.data[2].toJSON() as string);
+                const chain_nonce = parseInt(event.data[1].toString());
+                const dest = sanitizeHexData(event.data[2]);
+                const value = new BigNumber(event.data[3].toJSON() as string);
 
-                return new UnfreezeEvent(action_id, dest, value);
+                return new UnfreezeEvent(action_id, chain_nonce, dest, value);
             }
             case 'UnfreezeUniqueWrapped': {
                 const action_id = new BigNumber(
@@ -182,6 +168,7 @@ export class PolkadotPalletHelper
 
                 return new UnfreezeUniqueEvent(
                     action_id,
+                    0, // TODO: Decode
                     to,
                     Buffer.from(data, 'hex')
 				)
@@ -192,13 +179,11 @@ export class PolkadotPalletHelper
     }
 
     async emittedEventHandler(
-        event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent
+        event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent 
     ): Promise<Hash> {
         let block;
         if (event instanceof UnfreezeEvent) {
             block = await this.unfreeze(event);
-        } else if (event instanceof ScCallEvent) {
-            block = await this.sccall(event);
         } else if (event instanceof TransferEvent) {
             block = await this.send_wrap(event);
         } else if (event instanceof UnfreezeUniqueEvent) {
@@ -231,11 +216,6 @@ export class PolkadotPalletHelper
         )
     }
 
-    private async sccall(_event: ScCallEvent): Promise<Hash> {
-        //pub fn sc_call_verify(&mut self, action_id: String, to: AccountId, value: Balance, endpoint: [u8; 4], args: Vec<Vec<u8>>)
-        throw Error('unimplimented');
-    }
-
     private async unfreeze_nft(event: UnfreezeUniqueEvent): Promise<Hash> {
         console.log(`unfreeze_nft! to: ${event.to}`);
         return await this.resolve_block(
@@ -254,6 +234,7 @@ export class PolkadotPalletHelper
             this.api.tx.freezer
             .transferWrappedVerify(
                 event.action_id.toString(),
+                event.chain_nonce,
                 event.to,
                 event.value.toString()
             )
@@ -267,7 +248,7 @@ export class PolkadotPalletHelper
             .transferWrappedNftVerify(
                 event.action_id.toString(),
                 event.to,
-                `0x${toHex(event.id)}`
+                `0x${toHex(event.id)}` // TODO: Encode Chain Nonce
             )
         )
     }

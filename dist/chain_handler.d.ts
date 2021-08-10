@@ -11,47 +11,43 @@ import { TxnSocketServe } from './socket';
  *
  * @param value number of tokens locked in source blockchain
  */
-export declare class TransferEvent {
+export declare class TransferEvent implements MultiChainEvent {
     readonly action_id: BigNumber;
+    readonly chain_nonce: number;
     readonly to: string;
     readonly value: BigNumber;
-    constructor(action_id: BigNumber, to: string, value: BigNumber);
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, value: BigNumber);
 }
-export declare class TransferUniqueEvent {
+export declare class TransferUniqueEvent implements MultiChainEvent {
     readonly action_id: BigNumber;
+    readonly chain_nonce: number;
     readonly to: string;
     readonly id: Uint8Array;
-    constructor(action_id: BigNumber, to: string, id: Uint8Array);
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array);
 }
 /**
  * An event indicating wrapped tokens were burnt in the target blockchain
  * indicates that X tokens are ready to be released in the source blockchain
  */
-export declare class UnfreezeEvent {
+export declare class UnfreezeEvent implements MultiChainEvent {
     readonly id: BigNumber;
+    readonly chain_nonce: number;
     readonly to: string;
     readonly value: BigNumber;
-    constructor(action_id: BigNumber, to: string, value: BigNumber);
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, value: BigNumber);
 }
-export declare class UnfreezeUniqueEvent {
+export declare class UnfreezeUniqueEvent implements MultiChainEvent {
     readonly id: BigNumber;
+    readonly chain_nonce: number;
     readonly to: string;
     readonly nft_id: Uint8Array;
-    constructor(action_id: BigNumber, to: string, id: Uint8Array);
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array);
 }
-/**
- * An event indicating a request to call another smart contract in target blockchain
- */
-export declare class ScCallEvent {
-    readonly action_id: BigNumber;
-    readonly to: string;
-    readonly value: BigNumber;
-    readonly endpoint: string;
-    readonly args?: string[];
-    constructor(action_id: BigNumber, to: string, value: BigNumber, endpoint: string, args?: string[]);
+export interface MultiChainEvent {
+    readonly chain_nonce: number;
 }
 export interface ChainIdentifier {
-    readonly chainIdentifier: string;
+    readonly chainNonce: number;
 }
 /**
  * A blockchain which can emit supported events
@@ -75,12 +71,13 @@ export interface ChainEmitter<EmissionEvent, Iter, SupportedEvents> {
      */
     eventHandler(event: EmissionEvent): Promise<SupportedEvents | undefined>;
 }
+declare type FullChain<Event, Iter, Handlers, Tx extends IntoString> = ChainEmitter<Event, Iter, Handlers> & ChainListener<Handlers, Tx> & ChainIdentifier;
 /**
  * Start a bridge connection between emitter & listener
  *
  * [listener] should be able to handle all the events [emitter] emits
  */
-export declare function emitEvents<Event, Iter, Handlers, Tx extends IntoString>(io: TxnSocketServe, emitter: ChainEmitter<Event, Iter, Handlers>, listener: ChainListener<Handlers, Tx> & ChainIdentifier): Promise<void>;
+export declare function emitEvents<Handlers extends MultiChainEvent>(io: TxnSocketServe, chains: Array<FullChain<any, any, Handlers, IntoString>>): Promise<void>;
 interface IntoString {
     toString(): string;
 }

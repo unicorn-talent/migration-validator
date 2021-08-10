@@ -2,7 +2,6 @@ import {
     Account,
     Address,
     AddressValue,
-    Balance,
     BigUIntType,
     BigUIntValue,
     BinaryCodec,
@@ -38,7 +37,6 @@ import {
     ChainEmitter,
     ChainIdentifier,
     ChainListener,
-    ScCallEvent,
     TransferEvent,
     TransferUniqueEvent,
     UnfreezeEvent,
@@ -48,32 +46,25 @@ import {
 import { toHex } from "./common";
 
 const unfreeze_event_t = new StructType('Unfreeze', [
+    new StructFieldDefinition('chain_nonce', '', new U64Type()),
     new StructFieldDefinition('to', '', new ListType(new U8Type())),
     new StructFieldDefinition('value', '', new BigUIntType()),
-]);
-
-const rpc_event_t = new StructType('Rpc', [
-    new StructFieldDefinition('to', '', new ListType(new U8Type())),
-    new StructFieldDefinition('value', '', new BigUIntType()),
-    new StructFieldDefinition('endpoint', '', new ListType(new U8Type())),
-    new StructFieldDefinition(
-        'args',
-        '',
-        new ListType(new ListType(new U8Type()))
-    ),
 ]);
 
 const transfer_event_t = new StructType('Transfer', [
+    new StructFieldDefinition('chain_nonce', '', new U64Type()),
     new StructFieldDefinition('to', '', new ListType(new U8Type())),
     new StructFieldDefinition('value', '', new BigUIntType()),
 ]);
 
 const unfreeze_nft_event_t = new StructType(`UnfreezeNft`, [
+    new StructFieldDefinition('chain_nonce', '', new U64Type()),
     new StructFieldDefinition('to', '', new ListType(new U8Type())),
     new StructFieldDefinition('id', '', new ListType(new U8Type()))
 ])
 
 const transfer_nft_event_t = new StructType('TransferNft', [
+    new StructFieldDefinition('chain_nonce', '', new U64Type()),
     new StructFieldDefinition('to', '', new ListType(new U8Type())),
     new StructFieldDefinition('token', '', new TokenIdentifierType()),
     new StructFieldDefinition('nonce', '', new U64Type())
@@ -82,15 +73,8 @@ const transfer_nft_event_t = new StructType('TransferNft', [
 const event_t = new EnumType('Event', [
     new EnumVariantDefinition('Unfreeze', 0),
     new EnumVariantDefinition('UnfreezeNft', 1),
-    new EnumVariantDefinition('Rpc', 2),
-    new EnumVariantDefinition('Transfer', 3),
-    new EnumVariantDefinition('TransferNft', 4),
-]);
-
-const event_info_rpc_t = new StructType('EventInfo', [
-    new StructFieldDefinition('event', '', event_t),
-    new StructFieldDefinition('evrpc', '', rpc_event_t),
-    new StructFieldDefinition('read_cnt', '', new BigUIntType()),
+    new EnumVariantDefinition('Transfer', 2),
+    new EnumVariantDefinition('TransferNft', 3),
 ]);
 
 const event_info_unfreeze_t = new StructType('EventInfo', [
@@ -132,8 +116,8 @@ const nft_info_encoded_t = new StructType('EncodedNft', [
  */
 export class ElrondHelper
     implements
-        ChainListener<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent, TransactionHash>,
-        ChainEmitter<string, void, TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent>,
+        ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent, TransactionHash>,
+        ChainEmitter<string, void, TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent>,
         ChainIdentifier
 {
     private readonly provider: ProxyProvider;
@@ -143,7 +127,7 @@ export class ElrondHelper
     private readonly eventSocket: Socket;
     private readonly codec: BinaryCodec;
 
-    readonly chainIdentifier = "ELROND";
+    readonly chainNonce = 0x1;
 
     private constructor(
         provider: ProxyProvider,
@@ -197,19 +181,17 @@ export class ElrondHelper
 
     async eventHandler(
         id: string
-    ): Promise<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeUniqueEvent | UnfreezeEvent | undefined> {
+    ): Promise<TransferEvent | TransferUniqueEvent | UnfreezeUniqueEvent | UnfreezeEvent | undefined> {
         const rpc_ev = await this.eventDecoder(id);
         return rpc_ev;
     }
 
     async emittedEventHandler(
-        event: TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent
+        event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent
     ): Promise<TransactionHash> {
         let tx: Transaction;
         if (event instanceof TransferEvent) {
             tx = await this.transferMintVerify(event);
-        } else if (event instanceof ScCallEvent) {
-            tx = await this.scCallVerify(event);
         } else if (event instanceof UnfreezeEvent) {
             tx = await this.unfreezeVerify(event);
         } else if (event instanceof TransferUniqueEvent) {
@@ -280,6 +262,7 @@ export class ElrondHelper
 
     private async transferNftVerify({
         action_id,
+        chain_nonce,
         to,
         id
     }: TransferUniqueEvent): Promise<Transaction> {
@@ -292,6 +275,7 @@ export class ElrondHelper
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('validateSendNft'))
                 .addArg(new BigUIntValue(action_id))
+                .addArg(new U64Value(new BigNumber(chain_nonce)))
                 .addArg(new AddressValue(new Address(to)))
                 .addArg(BytesValue.fromHex(toHex(id)))
                 .build()
@@ -305,6 +289,7 @@ export class ElrondHelper
 
     private async transferMintVerify({
         action_id,
+        chain_nonce,
         to,
         value,
     }: TransferEvent): Promise<Transaction> {
@@ -315,8 +300,9 @@ export class ElrondHelper
             nonce: this.sender.nonce,
             gasLimit: new GasLimit(50000000),
             data: TransactionPayload.contractCall()
-                .setFunction(new ContractFunction('validateSendXp'))
+                .setFunction(new ContractFunction('validateSendWrapped'))
                 .addArg(new BigUIntValue(action_id))
+                .addArg(new U64Value(new BigNumber(chain_nonce)))
                 .addArg(new AddressValue(new Address(to)))
                 .addArg(new U32Value(value))
                 .build(),
@@ -330,7 +316,7 @@ export class ElrondHelper
 
     private async eventDecoder(
         id: string
-    ): Promise<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent | undefined> {
+    ): Promise<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined> {
         await this.sender.sync(this.provider);
 
         const tx = new Transaction({
@@ -360,6 +346,7 @@ export class ElrondHelper
                     .valueOf().evunfreeze;
                 return new UnfreezeEvent(
                     new BigNumber(id),
+                    (unfreeze['chain_nonce'].valueOf() as BigNumber).toNumber(),
                     Buffer.from(unfreeze['to']).toString(),
                     new BigNumber(Number(unfreeze['value'] as BigInt))
                 );
@@ -371,34 +358,23 @@ export class ElrondHelper
                 
                 return new UnfreezeUniqueEvent(
                     new BigNumber(id),
+                    (unfreeze_nft['chain_nonce'].valueOf() as BigNumber).toNumber(),
                     Buffer.from(unfreeze_nft['to']).toString(),
                     Buffer.from(unfreeze_nft['id'])
                 )
             }
             case 2: {
-                const rpc = this.codec
-                    .decodeNested(data[0], event_info_rpc_t)[0]
-                    .valueOf().evrpc;
-                return new ScCallEvent(
-                    new BigNumber(id),
-                    Buffer.from(rpc['to']).toString(),
-                    new BigNumber(Number(rpc['value'] as BigInt)),
-                    Buffer.from(rpc['endpoint']).toString(),
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    rpc['args'].map((s: any) => Buffer.from(s).toString())
-                );
-            }
-            case 3: {
                 const transfer = this.codec
                     .decodeNested(data[0], event_info_transfer_t)[0]
                     .valueOf().evtransfer;
                 return new TransferEvent(
                     new BigNumber(id),
+                    (transfer['chain_nonce'].valueOf() as BigNumber).toNumber(),
                     Buffer.from(transfer['to']).toString(),
                     new BigNumber(Number(transfer['value'] as BigInt))
                 );
             }
-            case 4: {
+            case 3: {
                 const transfer_nft = this.codec
                     .decodeNested(data[0], event_info_transfer_nft_t)[0]
                     .valueOf().evtransfernft;
@@ -407,7 +383,7 @@ export class ElrondHelper
                     nft_info_encoded_t,
                     [
                         new StructField(new TokenIdentifierValue(transfer_nft['token']), 'token'),
-                        new StructField(new U64Value(transfer_nft['nonce']), 'nonce')
+                        new StructField(new U64Value(transfer_nft['nonce']), 'nonce'),
                     ]
                 );
 
@@ -417,6 +393,7 @@ export class ElrondHelper
                 
                 return new TransferUniqueEvent(
                     new BigNumber(id),
+                    (transfer_nft['chain_nonce'].valueOf() as BigNumber).toNumber(),
                     Buffer.from(transfer_nft['to']).toString(),
                     Uint8Array.from(encoded_info)
                 );
@@ -424,41 +401,5 @@ export class ElrondHelper
             default:
                 throw Error('unhandled event!!!');
         }
-    }
-
-    async scCallVerify({
-        action_id,
-        to,
-        value,
-        endpoint,
-        args,
-    }: ScCallEvent): Promise<Transaction> {
-        await this.sender.sync(this.provider);
-
-        // fn validate_sc_call(action_id: BigUint, to: Address, endpoint: BoxedBytes, #[var_args] args: VarArgs<BoxedBytes>,)
-        let payloadBuilder = TransactionPayload.contractCall()
-            .setFunction(new ContractFunction('validateSCCall'))
-            .addArg(new BigUIntValue(action_id))
-            .addArg(new AddressValue(new Address(to)))
-            .addArg(BytesValue.fromUTF8(endpoint));
-
-        for (const buf of args ?? []) {
-            payloadBuilder = payloadBuilder.addArg(BytesValue.fromHex(buf));
-        }
-
-        console.log(`args: ${JSON.stringify(payloadBuilder)}`);
-
-        const tx = new Transaction({
-            receiver: this.mintContract,
-            nonce: this.sender.nonce,
-            gasLimit: new GasLimit(80000000),
-            data: payloadBuilder.build(),
-            value: Balance.egld(value),
-        });
-
-        this.signer.sign(tx);
-        await tx.send(this.provider);
-
-        return tx;
     }
 }

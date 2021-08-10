@@ -5,7 +5,7 @@
  * `target blockchain`: The blockchain with wrapped tokens
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.emitEvents = exports.ScCallEvent = exports.UnfreezeUniqueEvent = exports.UnfreezeEvent = exports.TransferUniqueEvent = exports.TransferEvent = void 0;
+exports.emitEvents = exports.UnfreezeUniqueEvent = exports.UnfreezeEvent = exports.TransferUniqueEvent = exports.TransferEvent = void 0;
 /**
  * An event indicating a cross chain transfer of assets
  * indicates that X tokens were locked in source blockchain
@@ -13,16 +13,18 @@ exports.emitEvents = exports.ScCallEvent = exports.UnfreezeUniqueEvent = exports
  * @param value number of tokens locked in source blockchain
  */
 class TransferEvent {
-    constructor(action_id, to, value) {
+    constructor(action_id, chain_nonce, to, value) {
         this.action_id = action_id;
+        this.chain_nonce = chain_nonce;
         this.to = to;
         this.value = value;
     }
 }
 exports.TransferEvent = TransferEvent;
 class TransferUniqueEvent {
-    constructor(action_id, to, id) {
+    constructor(action_id, chain_nonce, to, id) {
         this.action_id = action_id;
+        this.chain_nonce = chain_nonce;
         this.to = to;
         this.id = id;
     }
@@ -33,56 +35,69 @@ exports.TransferUniqueEvent = TransferUniqueEvent;
  * indicates that X tokens are ready to be released in the source blockchain
  */
 class UnfreezeEvent {
-    constructor(action_id, to, value) {
+    constructor(action_id, chain_nonce, to, value) {
         this.id = action_id;
+        this.chain_nonce = chain_nonce;
         this.to = to;
         this.value = value;
     }
 }
 exports.UnfreezeEvent = UnfreezeEvent;
 class UnfreezeUniqueEvent {
-    constructor(action_id, to, id) {
+    constructor(action_id, chain_nonce, to, id) {
         this.id = action_id;
+        this.chain_nonce = chain_nonce;
         this.to = to;
         this.nft_id = id;
     }
 }
 exports.UnfreezeUniqueEvent = UnfreezeUniqueEvent;
 /**
- * An event indicating a request to call another smart contract in target blockchain
- */
-class ScCallEvent {
-    constructor(action_id, to, value, endpoint, args) {
-        this.action_id = action_id;
-        this.to = to;
-        this.value = value;
-        this.endpoint = endpoint;
-        this.args = args;
-    }
-}
-exports.ScCallEvent = ScCallEvent;
-/**
  * Start a bridge connection between emitter & listener
  *
  * [listener] should be able to handle all the events [emitter] emits
  */
-async function emitEvents(io, emitter, listener) {
-    emitter.eventIter(async (event) => {
-        if (event == undefined) {
-            return;
+async function emitEvents(io, 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+chains) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const map = {};
+    const handleEvent = async (listener, event) => {
+        const tx = await listener.emittedEventHandler(event);
+        if (event instanceof TransferUniqueEvent) {
+            io.emit("transfer_nft_event", listener.chainNonce, event.action_id.toString(), tx.toString());
         }
-        const ev = await emitter.eventHandler(event);
-        if (ev == undefined) {
-            return;
+        else if (event instanceof UnfreezeUniqueEvent) {
+            io.emit("unfreeze_nft_event", listener.chainNonce, event.id.toString(), tx.toString());
         }
-        const tx = await listener.emittedEventHandler(ev);
-        if (ev instanceof TransferUniqueEvent) {
-            io.emit("transfer_nft_event", listener.chainIdentifier, ev.action_id.toString(), tx.toString());
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const listenEvents = (emitter) => {
+        emitter.eventIter(async (event) => {
+            if (event === undefined) {
+                return;
+            }
+            const ev = await emitter.eventHandler(event);
+            if (ev === undefined) {
+                return;
+            }
+            if (ev.chain_nonce === emitter.chainNonce) {
+                throw Error("Chain Nonce is the same"); // TODO: Revert transaction
+            }
+            const target = map[ev.chain_nonce];
+            if (target === undefined) {
+                throw Error(`Unsupported Chain Nonce: ${ev.chain_nonce}`); // TODO: Revert transaction
+            }
+            handleEvent(target, ev);
+        });
+    };
+    for (const chain of chains) {
+        if (map[chain.chainNonce] !== undefined) {
+            throw Error("Duplicate chain nonce!");
         }
-        else if (ev instanceof UnfreezeUniqueEvent) {
-            io.emit("unfreeze_nft_event", listener.chainIdentifier, ev.id.toString(), tx.toString());
-        }
-    });
+        map[chain.chainNonce] = chain;
+        listenEvents(chain);
+    }
 }
 exports.emitEvents = emitEvents;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY2hhaW5faGFuZGxlci5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uL3NyYy9jaGFpbl9oYW5kbGVyLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7QUFBQTs7OztHQUlHOzs7QUFLSDs7Ozs7R0FLRztBQUNILE1BQWEsYUFBYTtJQUt0QixZQUFZLFNBQW9CLEVBQUUsRUFBVSxFQUFFLEtBQWdCO1FBQzFELElBQUksQ0FBQyxTQUFTLEdBQUcsU0FBUyxDQUFDO1FBQzNCLElBQUksQ0FBQyxFQUFFLEdBQUcsRUFBRSxDQUFDO1FBQ2IsSUFBSSxDQUFDLEtBQUssR0FBRyxLQUFLLENBQUM7SUFDdkIsQ0FBQztDQUNKO0FBVkQsc0NBVUM7QUFFRCxNQUFhLG1CQUFtQjtJQUs1QixZQUFZLFNBQW9CLEVBQUUsRUFBVSxFQUFFLEVBQWM7UUFDeEQsSUFBSSxDQUFDLFNBQVMsR0FBRyxTQUFTLENBQUM7UUFDM0IsSUFBSSxDQUFDLEVBQUUsR0FBRyxFQUFFLENBQUM7UUFDYixJQUFJLENBQUMsRUFBRSxHQUFHLEVBQUUsQ0FBQztJQUNqQixDQUFDO0NBQ0o7QUFWRCxrREFVQztBQUVEOzs7R0FHRztBQUNILE1BQWEsYUFBYTtJQUt0QixZQUFZLFNBQW9CLEVBQUUsRUFBVSxFQUFFLEtBQWdCO1FBQzFELElBQUksQ0FBQyxFQUFFLEdBQUcsU0FBUyxDQUFDO1FBQ3BCLElBQUksQ0FBQyxFQUFFLEdBQUcsRUFBRSxDQUFDO1FBQ2IsSUFBSSxDQUFDLEtBQUssR0FBRyxLQUFLLENBQUM7SUFDdkIsQ0FBQztDQUNKO0FBVkQsc0NBVUM7QUFFRCxNQUFhLG1CQUFtQjtJQUs1QixZQUFZLFNBQW9CLEVBQUUsRUFBVSxFQUFFLEVBQWM7UUFDeEQsSUFBSSxDQUFDLEVBQUUsR0FBRyxTQUFTLENBQUM7UUFDcEIsSUFBSSxDQUFDLEVBQUUsR0FBRyxFQUFFLENBQUM7UUFDYixJQUFJLENBQUMsTUFBTSxHQUFHLEVBQUUsQ0FBQztJQUNyQixDQUFDO0NBQ0o7QUFWRCxrREFVQztBQUVEOztHQUVHO0FBQ0gsTUFBYSxXQUFXO0lBT3BCLFlBQ0ksU0FBb0IsRUFDcEIsRUFBVSxFQUNWLEtBQWdCLEVBQ2hCLFFBQWdCLEVBQ2hCLElBQWU7UUFFZixJQUFJLENBQUMsU0FBUyxHQUFHLFNBQVMsQ0FBQztRQUMzQixJQUFJLENBQUMsRUFBRSxHQUFHLEVBQUUsQ0FBQztRQUNiLElBQUksQ0FBQyxLQUFLLEdBQUcsS0FBSyxDQUFDO1FBQ25CLElBQUksQ0FBQyxRQUFRLEdBQUcsUUFBUSxDQUFDO1FBQ3pCLElBQUksQ0FBQyxJQUFJLEdBQUcsSUFBSSxDQUFDO0lBQ3JCLENBQUM7Q0FDSjtBQXBCRCxrQ0FvQkM7QUE2QkQ7Ozs7R0FJRztBQUNJLEtBQUssVUFBVSxVQUFVLENBQzVCLEVBQWtCLEVBQ2xCLE9BQTRDLEVBQzVDLFFBQXVEO0lBRXZELE9BQU8sQ0FBQyxTQUFTLENBQUMsS0FBSyxFQUFFLEtBQUssRUFBRSxFQUFFO1FBQzlCLElBQUksS0FBSyxJQUFJLFNBQVMsRUFBRTtZQUNwQixPQUFPO1NBQ1Y7UUFDRCxNQUFNLEVBQUUsR0FBRyxNQUFNLE9BQU8sQ0FBQyxZQUFZLENBQUMsS0FBSyxDQUFDLENBQUM7UUFDN0MsSUFBSSxFQUFFLElBQUksU0FBUyxFQUFFO1lBQ2pCLE9BQU87U0FDVjtRQUVELE1BQU0sRUFBRSxHQUFHLE1BQU0sUUFBUSxDQUFDLG1CQUFtQixDQUFDLEVBQUUsQ0FBQyxDQUFDO1FBQ2xELElBQUksRUFBRSxZQUFZLG1CQUFtQixFQUFFO1lBQ25DLEVBQUUsQ0FBQyxJQUFJLENBQUMsb0JBQW9CLEVBQUUsUUFBUSxDQUFDLGVBQWUsRUFBRSxFQUFFLENBQUMsU0FBUyxDQUFDLFFBQVEsRUFBRSxFQUFFLEVBQUUsQ0FBQyxRQUFRLEVBQUUsQ0FBQyxDQUFDO1NBQ25HO2FBQU0sSUFBSSxFQUFFLFlBQVksbUJBQW1CLEVBQUU7WUFDMUMsRUFBRSxDQUFDLElBQUksQ0FBQyxvQkFBb0IsRUFBRSxRQUFRLENBQUMsZUFBZSxFQUFFLEVBQUUsQ0FBQyxFQUFFLENBQUMsUUFBUSxFQUFFLEVBQUUsRUFBRSxDQUFDLFFBQVEsRUFBRSxDQUFDLENBQUM7U0FDNUY7SUFDTCxDQUFDLENBQUMsQ0FBQztBQUNQLENBQUM7QUFyQkQsZ0NBcUJDIn0=
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY2hhaW5faGFuZGxlci5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uL3NyYy9jaGFpbl9oYW5kbGVyLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7QUFBQTs7OztHQUlHOzs7QUFLSDs7Ozs7R0FLRztBQUNILE1BQWEsYUFBYTtJQU10QixZQUFZLFNBQW9CLEVBQUUsV0FBbUIsRUFBRSxFQUFVLEVBQUUsS0FBZ0I7UUFDL0UsSUFBSSxDQUFDLFNBQVMsR0FBRyxTQUFTLENBQUM7UUFDM0IsSUFBSSxDQUFDLFdBQVcsR0FBRyxXQUFXLENBQUM7UUFDL0IsSUFBSSxDQUFDLEVBQUUsR0FBRyxFQUFFLENBQUM7UUFDYixJQUFJLENBQUMsS0FBSyxHQUFHLEtBQUssQ0FBQztJQUN2QixDQUFDO0NBQ0o7QUFaRCxzQ0FZQztBQUVELE1BQWEsbUJBQW1CO0lBTTVCLFlBQVksU0FBb0IsRUFBRSxXQUFtQixFQUFFLEVBQVUsRUFBRSxFQUFjO1FBQzdFLElBQUksQ0FBQyxTQUFTLEdBQUcsU0FBUyxDQUFDO1FBQzNCLElBQUksQ0FBQyxXQUFXLEdBQUcsV0FBVyxDQUFDO1FBQy9CLElBQUksQ0FBQyxFQUFFLEdBQUcsRUFBRSxDQUFDO1FBQ2IsSUFBSSxDQUFDLEVBQUUsR0FBRyxFQUFFLENBQUM7SUFDakIsQ0FBQztDQUNKO0FBWkQsa0RBWUM7QUFFRDs7O0dBR0c7QUFDSCxNQUFhLGFBQWE7SUFNdEIsWUFBWSxTQUFvQixFQUFFLFdBQW1CLEVBQUUsRUFBVSxFQUFFLEtBQWdCO1FBQy9FLElBQUksQ0FBQyxFQUFFLEdBQUcsU0FBUyxDQUFDO1FBQ3BCLElBQUksQ0FBQyxXQUFXLEdBQUcsV0FBVyxDQUFDO1FBQy9CLElBQUksQ0FBQyxFQUFFLEdBQUcsRUFBRSxDQUFDO1FBQ2IsSUFBSSxDQUFDLEtBQUssR0FBRyxLQUFLLENBQUM7SUFDdkIsQ0FBQztDQUNKO0FBWkQsc0NBWUM7QUFFRCxNQUFhLG1CQUFtQjtJQU01QixZQUFZLFNBQW9CLEVBQUUs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

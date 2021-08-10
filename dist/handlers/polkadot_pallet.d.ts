@@ -1,6 +1,6 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { EventRecord, Hash } from '@polkadot/types/interfaces';
-import { ChainEmitter, ChainIdentifier, ChainListener, ScCallEvent, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from '../chain_handler';
+import { ChainEmitter, ChainIdentifier, ChainListener, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from '../chain_handler';
 /**
  * Polkadot Freezer Pallet Helper
  *
@@ -8,10 +8,10 @@ import { ChainEmitter, ChainIdentifier, ChainListener, ScCallEvent, TransferEven
  *
  * Emits [[TransferEvent]], [[ScCallEvent]], [[UnfreezeEvent]]
  */
-export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, void, TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent>, ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent, Hash>, ChainIdentifier {
+export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, void, TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent>, ChainListener<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent, Hash>, ChainIdentifier {
     private readonly api;
     private readonly signer;
-    readonly chainIdentifier = "POLKADOT";
+    readonly chainNonce = 0;
     private constructor();
     eventIter(cb: (event: EventRecord) => Promise<void>): Promise<void>;
     /**
@@ -23,11 +23,10 @@ export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, v
      * WARN: The helper object uses an internal account as a workaround.
      */
     static new: (node_uri: string, signer: KeyringPair) => Promise<PolkadotPalletHelper>;
-    eventHandler(ev: EventRecord): Promise<TransferEvent | TransferUniqueEvent | ScCallEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined>;
-    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | ScCallEvent): Promise<Hash>;
+    eventHandler(ev: EventRecord): Promise<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined>;
+    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent): Promise<Hash>;
     private resolve_block;
     private unfreeze;
-    private sccall;
     private unfreeze_nft;
     private send_wrap;
     private send_wrap_nft;
