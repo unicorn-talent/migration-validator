@@ -28,14 +28,21 @@ async function elrondTestHelper(): Promise<ElrondHelper> {
 	);
 }
 
-async function web3TestHelper(): Promise<Web3Helper> {
-	return await Web3Helper.new(
-		config.heco_node,
-		config.heco_pkey,
-		config.heco_minter,
-		//@ts-expect-error minter abi
-		abi,
-		0x3,
+async function web3TestHelpers(): Promise<Array<Web3Helper>> {
+	return Promise.all(
+		config.web3.map(async ({
+			node,
+			pkey,
+			minter,
+			nonce
+		}) => await Web3Helper.new(
+			node,
+			pkey,
+			minter,
+			//@ts-expect-error minter abi
+			abi,
+			nonce
+		))
 	);
 }
 
@@ -62,7 +69,7 @@ const main = async () => {
 		[
 			await polkadotTestHelper(),
 			await elrondTestHelper(),
-			await web3TestHelper()
+			...await web3TestHelpers()
 		]
 	);
     console.log('READY TO LISTEN EVENTS!');

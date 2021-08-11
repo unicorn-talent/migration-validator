@@ -12,9 +12,29 @@ const config = {
         'erd1qqqqqqqqqqqqqpgqfy5zmm64avweyq3rcw65xczwkwedfz5zs3ysmja8la',
     // Workaround Elrond Event websocket
     elrond_ev_socket: 'ws://localhost:3000',
-    heco_node: "http://localhost:8545",
-    heco_pkey: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-    heco_minter: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+	web3: [
+		{
+			node: "https://http-testnet.hecochain.com",
+			pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
+			minter: "0x768C888bDf319f2bA0e2642235C2967f4a47441a",
+			erc1155: "0x9700D05aDC010f864b7a8AbB80DF2eA95b28a941",
+			nonce: 0x3
+		},
+		{
+			node: "https://data-seed-prebsc-1-s1.binance.org:8545",
+			pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
+			minter: "0x471bF01b8C622C00652F336651747B1A5d37b5ea",
+			erc1155: "0xaFFA531E294E8e4b6647F993c12216D8CFA90903",
+			nonce: 0x4
+		},
+		{
+			node: "https://ropsten.infura.io/v3/182b3d3fb2d14d5fbe7421348624d1ce",
+			pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
+			minter: "0x66b07bC16F499a0e835c5b277AF19555a05578c1",
+			erc1155: "0x5d9f23f7253Efef3926E934829Ab65C0092E218B",
+			nonce: 0x5
+		}
+	]
 };
 
 export default config

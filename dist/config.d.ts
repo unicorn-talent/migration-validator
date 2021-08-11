@@ -5,8 +5,12 @@ declare const config: {
     private_key: string;
     elrond_minter: string;
     elrond_ev_socket: string;
-    heco_node: string;
-    heco_pkey: string;
-    heco_minter: string;
+    web3: {
+        node: string;
+        pkey: string;
+        minter: string;
+        erc1155: string;
+        nonce: number;
+    }[];
 };
 export default config;
