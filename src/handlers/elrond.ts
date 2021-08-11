@@ -297,7 +297,7 @@ export class ElrondHelper
         const tx = new Transaction({
             receiver: this.mintContract,
             nonce: this.sender.nonce,
-            gasLimit: new GasLimit(50000000),
+            gasLimit: new GasLimit(70000000), // TODO: estimate this
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('validateSendWrapped'))
                 .addArg(new BigUIntValue(action_id))
@@ -308,6 +308,7 @@ export class ElrondHelper
         });
 
         this.signer.sign(tx);
+
         await tx.send(this.provider);
 
         return tx;

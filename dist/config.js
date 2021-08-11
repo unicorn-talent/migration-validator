@@ -9,7 +9,7 @@ const config = {
     // Private Key File
     private_key: '../XP.network-Elrond-Migration/erd1yflgh7duhhvpkqkqqjrcnz7j6pqnhy8kepglkk6k8h8dfu3as3ysdcxan8.pem',
     // Elrond minter contract address
-    elrond_minter: 'erd1qqqqqqqqqqqqqpgqfy5zmm64avweyq3rcw65xczwkwedfz5zs3ysmja8la',
+    elrond_minter: 'erd1qqqqqqqqqqqqqpgqe8lzlc2husrrthhyavhcj50kpneqzf9ms3ys4anmfd',
     // Workaround Elrond Event websocket
     elrond_ev_socket: 'ws://localhost:3000',
     web3: [
