@@ -14,6 +14,7 @@ import {
     UnfreezeEvent,
     UnfreezeUniqueEvent,
 } from '../chain_handler';
+import { NftPacked } from '../encoding';
 import { toHex } from './common';
 
 const REPLACEMENT_CHAR = '\ufffd'
@@ -164,15 +165,16 @@ export class PolkadotPalletHelper
                     event.data[0].toString() as string
                 );
                 const to = sanitizeHexData(event.data[1]);
-                const data = event.data[2].toString().replace('0x', '');
+                const data = Buffer.from(event.data[2].toString().replace('0x', ''), 'hex');
+				const decoded = NftPacked.deserializeBinary(data)
 
                 return new UnfreezeUniqueEvent(
                     action_id,
-                    0, // TODO: Decode
+                    decoded.getChainNonce(),
                     to,
-                    Buffer.from(data, 'hex')
+					decoded.getData_asU8()
 				)
-            }
+			}
             default:
                 return undefined;
         }
@@ -190,7 +192,7 @@ export class PolkadotPalletHelper
         } else if (event instanceof UnfreezeUniqueEvent) {
             block = await this.unfreeze_nft(event);
         } else if (event instanceof TransferUniqueEvent) {
-            block = await this.send_wrap_nft(event);
+            block = await this.send_wrap_nft(event, origin_nonce);
         } else {
             throw Error(`unhandled event ${event}` )
         }
@@ -242,14 +244,18 @@ export class PolkadotPalletHelper
         );
     }
 
-    private async send_wrap_nft(event: TransferUniqueEvent): Promise<Hash> {
+    private async send_wrap_nft(event: TransferUniqueEvent, origin_nonce: number): Promise<Hash> {
         console.log(`send wrap nft! to: ${event.to}`);
+		const data = new NftPacked();
+		data.setChainNonce(origin_nonce);
+		data.setData(event.id);
+
         return await this.resolve_block(
             this.api.tx.freezer
             .transferWrappedNftVerify(
                 event.action_id.toString(),
                 event.to,
-                `0x${toHex(event.id)}` // TODO: Encode Chain Nonce
+                `0x${toHex(data.serializeBinary())}`
             )
         )
     }

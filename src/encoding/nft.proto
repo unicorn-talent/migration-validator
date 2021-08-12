@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message NftPacked {
+  uint32 chain_nonce = 1;
+  bytes data = 2;
+}
+
+message NftEthNative {
+  enum NftKind {
+    Erc721 = 0;
+    Erc1155 = 1;
+  }
+  NftKind nft_kind = 1;
+  string id = 2;
+  string contract_addr = 3;
+}
