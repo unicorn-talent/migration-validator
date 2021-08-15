@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+	"allowJs": true,
     "incremental": true,
     "target": "es2017",
     "outDir": "./dist",
@@ -39,9 +40,9 @@
 
     "lib": ["es2017", "dom"], // elrdjs depends on dom?
     "types": ["node"],
-    "typeRoots": ["node_modules/@types", "src/types"]
+    "typeRoots": ["node_modules/@types", "src/types", "src/encoding"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.js"],
   "exclude": ["node_modules/**"],
   "compileOnSave": false,
   "typedocOptions": {

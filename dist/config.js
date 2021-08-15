@@ -16,8 +16,8 @@ const config = {
         {
             node: "https://http-testnet.hecochain.com",
             pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
-            minter: "0x768C888bDf319f2bA0e2642235C2967f4a47441a",
-            erc1155: "0x9700D05aDC010f864b7a8AbB80DF2eA95b28a941",
+            minter: "0xEf5b44491d1da9E30803d666Fb7BdD06141f0b82",
+            erc1155: "0x65c823E97d61F5Db30a433612a4AF3CC26aeD4ba",
             nonce: 0x3
         },
         {

@@ -117,6 +117,8 @@ export class Web3Helper implements
 
 			const buf = Buffer.from(encoded.serializeBinary())
 
+			console.log("data", buf.toString('base64'));
+
 			tx = await this.mintContract.validate_transfer_nft(
 				action,
 				event.to,
