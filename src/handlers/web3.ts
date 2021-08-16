@@ -40,7 +40,7 @@ export class Web3Helper implements
 			);
 			await cb(ev);
 		});
-		this.mintContract.on('Transfer', async (action_id: EthBN, chain_nonce: EthBN, to: string, value: BigNumber) => {
+		this.mintContract.on('Transfer', async (action_id: EthBN, chain_nonce: EthBN, to: string, value: EthBN) => {
 			const ev = new TransferEvent(
 				new BigNumber(action_id.toString()),
 				chain_nonce.toNumber(),
@@ -63,7 +63,7 @@ export class Web3Helper implements
 
 			await cb(ev);
 		});
-		this.mintContract.on('TransferErc721', async (action_id: EthBN, chain_nonce: EthBN, to: string, id: BigNumber, contract_addr: string) => {
+		this.mintContract.on('TransferErc721', async (action_id: EthBN, chain_nonce: EthBN, to: string, id: EthBN, contract_addr: string) => {
 			const prot = new NftEthNative();
 			prot.setId(id.toString());
 			prot.setNftKind(NftEthNative.NftKind.ERC721);
@@ -78,7 +78,7 @@ export class Web3Helper implements
 
 			await cb(ev);
 		});
-		this.mintContract.on('TransferErc1155', async (action_id: EthBN, chain_nonce: EthBN, to: string, id: BigNumber, contract_addr: string) => {
+		this.mintContract.on('TransferErc1155', async (action_id: EthBN, chain_nonce: EthBN, to: string, id: EthBN, contract_addr: string) => {
 			const prot = new NftEthNative();
 			prot.setId(id.toString());
 			prot.setNftKind(NftEthNative.NftKind.ERC1155);

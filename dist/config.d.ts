@@ -9,7 +9,6 @@ declare const config: {
         node: string;
         pkey: string;
         minter: string;
-        erc1155: string;
         nonce: number;
     }[];
 };

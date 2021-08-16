@@ -16,22 +16,19 @@ const config = {
 		{
 			node: "https://http-testnet.hecochain.com",
 			pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
-			minter: "0xEf5b44491d1da9E30803d666Fb7BdD06141f0b82",
-			erc1155: "0x65c823E97d61F5Db30a433612a4AF3CC26aeD4ba",
+			minter: "0x9d9061EE73832C016BF74282AD63D0F4DC784d9d",
 			nonce: 0x3
 		},
 		{
-			node: "https://data-seed-prebsc-1-s1.binance.org:8545",
+			node: "https://data-seed-prebsc-2-s1.binance.org:8545",
 			pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
-			minter: "0x471bF01b8C622C00652F336651747B1A5d37b5ea",
-			erc1155: "0xaFFA531E294E8e4b6647F993c12216D8CFA90903",
+			minter: "0x158D8366a2dfFEdCaC1e1B3ACDcC59a9941dd625",
 			nonce: 0x4
 		},
 		{
 			node: "https://ropsten.infura.io/v3/182b3d3fb2d14d5fbe7421348624d1ce",
 			pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
-			minter: "0x66b07bC16F499a0e835c5b277AF19555a05578c1",
-			erc1155: "0x5d9f23f7253Efef3926E934829Ab65C0092E218B",
+			minter: "0x57Fd7b0F4b2174B1B7B54D657226c3a6C5F49236",
 			nonce: 0x5
 		}
 	]
