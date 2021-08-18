@@ -131,10 +131,13 @@ export class Web3Helper implements
 			
 			switch (encoded.getNftKind()) {
 				case NftEthNative.NftKind.ERC1155: {
+					console.log("event", event.to);
+					console.log("id", encoded.getId());
+					console.log("contract addr", encoded.getContractAddr());
 					tx = await this.mintContract.validate_unfreeze_erc1155(
 						action,
 						event.to,
-						new BigNumber(encoded.getId()),
+						EthBN.from(encoded.getId()),
 						encoded.getContractAddr()
 					)
 					break;
@@ -143,7 +146,7 @@ export class Web3Helper implements
 					tx = await this.mintContract.validate_unfreeze_erc721(
 						action,
 						event.to,
-						new BigNumber(encoded.getId()),
+						EthBN.from(encoded.getId()),
 						encoded.getContractAddr()
 					)
 					break;
@@ -155,7 +158,7 @@ export class Web3Helper implements
         }
 	
 		await tx.wait();
-		console.log(`web3 ${kind} action_id: ${action}, executed`);
+		console.log(`web3 ${kind} action_id: ${action}, tx: ${tx.hash} executed`);
 
 		return tx.hash;
     }
