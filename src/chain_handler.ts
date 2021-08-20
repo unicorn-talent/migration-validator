@@ -25,6 +25,10 @@ export class TransferEvent implements MultiChainEvent {
         this.to = to;
         this.value = value;
     }
+
+	public act_id(): BigNumber {
+		return this.action_id
+	};
 }
 
 export class TransferUniqueEvent implements MultiChainEvent {
@@ -39,6 +43,10 @@ export class TransferUniqueEvent implements MultiChainEvent {
         this.to = to;
         this.id = id;
     }
+
+	public act_id(): BigNumber {
+		return this.action_id;
+	};
 }
 
 /**
@@ -57,6 +65,10 @@ export class UnfreezeEvent implements MultiChainEvent {
         this.to = to;
         this.value = value;
     }
+
+	public act_id(): BigNumber {
+		return this.id
+	};
 }
 
 export class UnfreezeUniqueEvent implements MultiChainEvent {
@@ -71,10 +83,15 @@ export class UnfreezeUniqueEvent implements MultiChainEvent {
         this.to = to;
         this.nft_id = id;
     }
+
+	public act_id(): BigNumber {
+		return this.id
+	};
 }
 
 export interface MultiChainEvent {
     readonly chain_nonce: number;
+	act_id(): BigNumber;
 }
 
 export interface ChainIdentifier {
@@ -127,11 +144,7 @@ export async function emitEvents<Handlers extends MultiChainEvent>(
 
     const handleEvent = async (listener: ChainListener<Handlers, IntoString> & ChainIdentifier, event: Handlers, origin_nonce: number) => {
         const tx = await listener.emittedEventHandler(event, origin_nonce);
-        if (event instanceof TransferUniqueEvent) {
-            io.emit("transfer_nft_event", listener.chainNonce, event.action_id.toString(), tx.toString());
-        } else if (event instanceof UnfreezeUniqueEvent) {
-            io.emit("unfreeze_nft_event", listener.chainNonce, event.id.toString(), tx.toString());
-        }
+		io.emit("tx_executed_event", listener.chainNonce, event.act_id().toString(), tx.toString())
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -17,6 +17,7 @@ export declare class TransferEvent implements MultiChainEvent {
     readonly to: string;
     readonly value: BigNumber;
     constructor(action_id: BigNumber, chain_nonce: number, to: string, value: BigNumber);
+    act_id(): BigNumber;
 }
 export declare class TransferUniqueEvent implements MultiChainEvent {
     readonly action_id: BigNumber;
@@ -24,6 +25,7 @@ export declare class TransferUniqueEvent implements MultiChainEvent {
     readonly to: string;
     readonly id: Uint8Array;
     constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array);
+    act_id(): BigNumber;
 }
 /**
  * An event indicating wrapped tokens were burnt in the target blockchain
@@ -35,6 +37,7 @@ export declare class UnfreezeEvent implements MultiChainEvent {
     readonly to: string;
     readonly value: BigNumber;
     constructor(action_id: BigNumber, chain_nonce: number, to: string, value: BigNumber);
+    act_id(): BigNumber;
 }
 export declare class UnfreezeUniqueEvent implements MultiChainEvent {
     readonly id: BigNumber;
@@ -42,9 +45,11 @@ export declare class UnfreezeUniqueEvent implements MultiChainEvent {
     readonly to: string;
     readonly nft_id: Uint8Array;
     constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array);
+    act_id(): BigNumber;
 }
 export interface MultiChainEvent {
     readonly chain_nonce: number;
+    act_id(): BigNumber;
 }
 export interface ChainIdentifier {
     readonly chainNonce: number;
