@@ -201,7 +201,7 @@ export class PolkadotPalletHelper
     }
 
     private async resolve_block(ext: SubmittableExtrinsic<"promise">): Promise<Hash> {
-        return await new Promise((res, rej) => ext.signAndSend(this.signer, (result) => {
+        return await new Promise((res, rej) => ext.signAndSend(this.signer, { nonce: -1 }, (result) => {
             result.isInBlock && res(result.status.asInBlock);
             result.isError && rej()
         }));
