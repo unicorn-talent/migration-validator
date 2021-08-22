@@ -44,6 +44,7 @@ import {
 } from '../chain_handler';
 
 import { toHex } from "./common";
+import v8 from 'v8';
 
 const unfreeze_event_t = new StructType('Unfreeze', [
     new StructFieldDefinition('chain_nonce', '', new U64Type()),
@@ -151,6 +152,27 @@ export class ElrondHelper
         );
     }
 
+
+	private async sendWrapper(tx: Transaction): Promise<Transaction> {
+		const orig: Transaction = v8.deserialize(v8.serialize(tx));
+		
+		tx.setNonce(this.sender.nonce);
+		this.signer.sign(tx);
+		this.sender.incrementNonce();
+
+		try {
+			await tx.send(this.provider);
+		} catch (e) {
+			if (e.message.includes("lowerNonceInTx")) {
+				this.sender.sync(this.provider);
+				return await this.sendWrapper(orig);
+			}
+			throw e;
+		}
+
+		return tx;
+	}
+
     /**
      * 
      * @param node_uri uri of the local(or remote?) elrond node
@@ -169,6 +191,8 @@ export class ElrondHelper
         await NetworkConfig.getDefault().sync(provider);
         const signer = new UserSigner(parseUserKey(secret_key));
         const senderac = new Account(signer.getAddress());
+
+		await senderac.sync(provider);
 
         return new ElrondHelper(
             provider,
@@ -213,11 +237,8 @@ export class ElrondHelper
         to,
         value,
     }: UnfreezeEvent): Promise<Transaction> {
-        await this.sender.sync(this.provider);
-
         const tx = new Transaction({
             receiver: this.mintContract,
-            nonce: this.sender.nonce,
             gasLimit: new GasLimit(50000000),
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('validateUnfreeze'))
@@ -227,10 +248,9 @@ export class ElrondHelper
                 .build(),
         });
 
-        this.signer.sign(tx);
-        await tx.send(this.provider);
+		const ex = await this.sendWrapper(tx);
 
-        return tx;
+        return ex;
     }
 
     private async unfreezeNftVerify({
@@ -238,13 +258,10 @@ export class ElrondHelper
         to,
         nft_id,
     }: UnfreezeUniqueEvent): Promise<Transaction> {
-        await this.sender.sync(this.provider);
-
         const nft_info = this.codec.decodeNested(Buffer.from(nft_id), nft_info_encoded_t)[0].valueOf();
 
         const tx = new Transaction({
             receiver: this.mintContract,
-            nonce: this.sender.nonce,
             gasLimit: new GasLimit(70000000),
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction("validateUnfreezeNft"))
@@ -255,10 +272,9 @@ export class ElrondHelper
                 .build()
         });
 
-        this.signer.sign(tx);
-        await tx.send(this.provider);
+        const ex = await this.sendWrapper(tx);
 
-        return tx;
+        return ex;
     }
 
     private async transferNftVerify({
@@ -266,11 +282,8 @@ export class ElrondHelper
         to,
         id
     }: TransferUniqueEvent, origin_nonce: number): Promise<Transaction> {
-        await this.sender.sync(this.provider);
-
         const tx = new Transaction({
             receiver: this.mintContract,
-            nonce: this.sender.nonce,
             gasLimit: new GasLimit(80000000),
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('validateSendNft'))
@@ -281,10 +294,9 @@ export class ElrondHelper
                 .build()
         });
 
-        this.signer.sign(tx);
-        await tx.send(this.provider);
+        const ex = await this.sendWrapper(tx); 
 
-        return tx;
+        return ex;
     }
 
     private async transferMintVerify({
@@ -292,11 +304,8 @@ export class ElrondHelper
         to,
         value,
     }: TransferEvent, origin_nonce: number): Promise<Transaction> {
-        await this.sender.sync(this.provider);
-
         const tx = new Transaction({
             receiver: this.mintContract,
-            nonce: this.sender.nonce,
             gasLimit: new GasLimit(70000000), // TODO: estimate this
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('validateSendWrapped'))
@@ -307,21 +316,16 @@ export class ElrondHelper
                 .build(),
         });
 
-        this.signer.sign(tx);
+        const ex = await this.sendWrapper(tx);
 
-        await tx.send(this.provider);
-
-        return tx;
+        return ex;
     }
 
     private async eventDecoder(
         id: string
     ): Promise<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined> {
-        await this.sender.sync(this.provider);
-
         const tx = new Transaction({
             receiver: this.mintContract,
-            nonce: this.sender.nonce,
             gasLimit: new GasLimit(50000000),
             data: TransactionPayload.contractCall()
                 .setFunction(new ContractFunction('eventRead'))
@@ -329,14 +333,13 @@ export class ElrondHelper
                 .build(),
         });
 
-        this.signer.sign(tx);
-        await tx.send(this.provider);
+        const ex = await this.sendWrapper(tx);
 
 		await new Promise(r => setTimeout(r, 4000));
-        await tx.awaitNotarized(this.provider);
-        console.log(`tx hash: ${tx.getHash().toString()}`);
+        await ex.awaitNotarized(this.provider);
+        console.log(`tx hash: ${ex.getHash().toString()}`);
         const res = (
-            await tx.getAsOnNetwork(this.provider)
+            await ex.getAsOnNetwork(this.provider)
         ).getSmartContractResults();
         const data = res.getImmediate().outputUntyped();
         switch (data[0][0]) {

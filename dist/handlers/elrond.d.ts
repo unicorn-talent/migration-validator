@@ -18,6 +18,7 @@ export declare class ElrondHelper implements ChainListener<TransferEvent | Trans
     readonly chainNonce = 2;
     private constructor();
     eventIter(cb: (event: string) => Promise<void>): Promise<void>;
+    private sendWrapper;
     /**
      *
      * @param node_uri uri of the local(or remote?) elrond node
