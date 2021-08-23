@@ -9,7 +9,7 @@ const config = {
         '../XP.network-Elrond-Migration/erd1yflgh7duhhvpkqkqqjrcnz7j6pqnhy8kepglkk6k8h8dfu3as3ysdcxan8.pem',
     // Elrond minter contract address
     elrond_minter:
-        'erd1qqqqqqqqqqqqqpgqe8lzlc2husrrthhyavhcj50kpneqzf9ms3ys4anmfd',
+        'erd1qqqqqqqqqqqqqpgq3m3nkcahd94c0wcp86nu2pnen7pjs0e5s3ysj5czvv',
     // Workaround Elrond Event websocket
     elrond_ev_socket: 'ws://localhost:3000',
 	web3: [
