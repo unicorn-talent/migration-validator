@@ -244,7 +244,7 @@ export class ElrondHelper
 				}
 				await new Promise(r => setTimeout(r, 3000));
 				const watcher = new TransactionWatcher(txh, this.provider);
-				await watcher.awaitExecuted()
+				await watcher.awaitNotarized()
 				const res: Array<ContractRes> = (await this.transactionResult(txh))["smartContractResults"]
 				const id = filterEventId(res).toString();
 
@@ -470,7 +470,7 @@ export class ElrondHelper
         const ex = await this.sendWrapper(tx);
 
 		await new Promise(r => setTimeout(r, 4000));
-        await ex.awaitExecuted(this.provider);
+        await ex.awaitNotarized(this.provider);
         console.log(`tx hash: ${ex.getHash().toString()}`);
         const res = (
             await ex.getAsOnNetwork(this.provider)

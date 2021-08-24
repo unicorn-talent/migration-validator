@@ -15,6 +15,8 @@ export declare class Web3Helper implements ChainEmitter<SupportedEvs, void, Supp
     eventIter(cb: ((event: SupportedEvs) => Promise<void>)): Promise<void>;
     eventHandler: (ev: SupportedEvs) => Promise<SupportedEvs>;
     private extractNftUpdate;
+    private extractNftUpdateErc1155;
+    private extractNftUpdateErc721;
     emittedEventHandler(event: SupportedEvs, origin_nonce: number): Promise<[string, NftUpdate | undefined]>;
 }
 export {};
