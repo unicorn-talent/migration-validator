@@ -8,10 +8,10 @@ const config = {
 	db_rest: "http://localhost:5000",
     // Private Key File
     private_key:
-        './validator2.pem',
+        '../XP.network-Elrond-Migration/erd1yflgh7duhhvpkqkqqjrcnz7j6pqnhy8kepglkk6k8h8dfu3as3ysdcxan8.pem',
     // Elrond minter contract address
     elrond_minter:
-        'erd1qqqqqqqqqqqqqpgqxs3kxkru32g48meneg0279sw3cexjnyrk4asc5ywxt',
+        'erd1qqqqqqqqqqqqqpgq9jx5etzfygj7clpqdv9upkz08sxpauvps3yslh9d3l',
     // Workaround Elrond Event websocket
     elrond_ev_socket: 'ws://localhost:3000',
 	web3: [
@@ -25,9 +25,9 @@ const config = {
 		},
 		{
 			node: "https://data-seed-prebsc-1-s2.binance.org:8545",
-			pkey: "0x5dca57fe4b6ed2572052efa01b37cc7e20ec1eee3dc3088ca0f5ebb59f875756",
-			minter: "0x1D6D4c33b58317Ca09A900737b6c24D2e1d1aBe6",
-			erc1155: "0x18AB7860b10c648630FC6DE2CBC67ca999297F96",
+			pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
+			minter: "0x158D8366a2dfFEdCaC1e1B3ACDcC59a9941dd625",
+			erc1155: "0xd6a9a86a3Cc56b23169c9492Ca5736Bdc77beF86",
 			chain_ident: "BSC",
 			nonce: 0x4
 		},
