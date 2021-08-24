@@ -49,7 +49,7 @@ export class Web3Helper implements
 
 	private async nftUriErc1155(contract: string, token: EthBN): Promise<string> {
 		const erc = new Contract(contract, erc1155_abi, this.w3);
-		return await erc.tokenURI(token);
+		return await erc.uri(token);
 	}
 
 	async eventIter(cb: ((event: SupportedEvs) => Promise<void>)): Promise<void> {
