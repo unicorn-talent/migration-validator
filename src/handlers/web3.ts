@@ -1,8 +1,8 @@
 import { Networkish } from "@ethersproject/networks";
 import BigNumber from "bignumber.js";
 import { Contract, providers, Wallet, BigNumber as EthBN } from "ethers";
-import { Provider } from "@ethersproject/abstract-provider";
-import { Interface } from "ethers/lib/utils";
+import { Provider, TransactionReceipt, Log } from "@ethersproject/abstract-provider";
+import { Interface, LogDescription } from "ethers/lib/utils";
 import { ChainEmitter, ChainIdentifier, ChainListener, NftUpdate, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from "../chain_handler";
 import {NftEthNative, NftPacked} from "../encoding";
 import { abi as ERC721_abi } from "../fakeERC721.json";
@@ -10,6 +10,9 @@ import { abi as ERC1155_abi } from "../fakeERC1155.json";
 
 
 type SupportedEvs = TransferEvent | UnfreezeEvent | TransferUniqueEvent | UnfreezeUniqueEvent;
+
+const erc1155_abi = new Interface(ERC1155_abi);
+const erc721_abi = new Interface(ERC721_abi);
 
 export class Web3Helper implements
 	ChainEmitter<SupportedEvs, void, SupportedEvs>,
@@ -40,12 +43,12 @@ export class Web3Helper implements
     }
 
 	private async nftUriErc721(contract: string, token: EthBN): Promise<string> {
-		const erc = new Contract(contract, ERC721_abi, this.w3);
+		const erc = new Contract(contract, erc721_abi, this.w3);
 		return await erc.tokenURI(token);
 	}
 
 	private async nftUriErc1155(contract: string, token: EthBN): Promise<string> {
-		const erc = new Contract(contract, ERC1155_abi, this.w3);
+		const erc = new Contract(contract, erc1155_abi, this.w3);
 		return await erc.tokenURI(token);
 	}
 
@@ -118,11 +121,21 @@ export class Web3Helper implements
 
 	public eventHandler = async (ev: SupportedEvs) => ev;
 
-	private extractNftUpdate(nft_data: string, to: string, receipt: any): NftUpdate {
-		const ev = (receipt as any).events.find((e: any) => e.event === 'TransferSingle');
-		const id = ev.args[3].toString();
+	private extractNftUpdate(nft_data: string, to: string, receipt: TransactionReceipt, parser: (e: Log) => LogDescription, event: string, arg_idx: number): NftUpdate {
+		const ev: LogDescription = receipt.logs.map((e) => {
+			try {
+				return parser(e)
+			} catch (_) {
+				return undefined
+			}
+		}).find((e) => e && e.name === event)!;
+
+		const id = ev.args[arg_idx].toString();
 		return { id: nft_data, data: `${this.erc1155},${to},${id}` };
 	}
+
+	private extractNftUpdateErc1155 = (nft_data: string, to: string, receipt: TransactionReceipt) => this.extractNftUpdate(nft_data, to, receipt, erc1155_abi.parseLog.bind(erc1155_abi), "TransferSingle", 3);
+	private extractNftUpdateErc721 = (nft_data: string, to: string, receipt: TransactionReceipt) => this.extractNftUpdate(nft_data, to, receipt, erc721_abi.parseLog.bind(erc721_abi), "Transfer", 2);
 
     async emittedEventHandler(event: SupportedEvs, origin_nonce: number): Promise<[string, NftUpdate | undefined]> {
 		let kind: string;
@@ -153,11 +166,12 @@ export class Web3Helper implements
 				buf.toString('base64')
 			);
 			const receipt = await tx.wait();
-			dat = this.extractNftUpdate(event.nft_data, event.to, receipt);
+			dat = this.extractNftUpdateErc1155(event.nft_data, event.to, receipt);
 			kind = "transfer_nft"
 		} else if (event instanceof UnfreezeUniqueEvent) {
 			action = event.id.toString();
 			const encoded = NftEthNative.deserializeBinary(event.nft_id);
+			let extractor;
 			let nft_data;
 			
 			switch (encoded.getNftKind()) {
@@ -172,6 +186,7 @@ export class Web3Helper implements
 						EthBN.from(encoded.getId()),
 						encoded.getContractAddr()
 					)
+					extractor = this.extractNftUpdateErc1155.bind(this);
 					break;
 				}
 				case NftEthNative.NftKind.ERC721: {
@@ -181,12 +196,13 @@ export class Web3Helper implements
 						event.to,
 						EthBN.from(encoded.getId()),
 						encoded.getContractAddr()
-					)
+					);
+					extractor = this.extractNftUpdateErc721.bind(this);
 					break;
 				}
 			}
 			const receipt = await tx.wait();
-			dat = this.extractNftUpdate(nft_data, event.to, receipt)
+			dat = extractor(nft_data, event.to, receipt)
 			kind = "unfreeze_nft"
 		} else {
             throw Error("Unsupported event!");
