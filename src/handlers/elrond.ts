@@ -210,7 +210,7 @@ export class ElrondHelper
     }
 
 	private transactionResult = async (tx_hash: TransactionHash) => {
-		const uri = `/transaction/${tx_hash.toString}?withResults=true`;
+		const uri = `/transaction/${tx_hash.toString()}?withResults=true`;
 
 		while (true) {
 			const res = await this.providerRest.get(uri);
