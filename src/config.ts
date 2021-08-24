@@ -27,7 +27,7 @@ const config = {
 			node: "https://data-seed-prebsc-1-s2.binance.org:8545",
 			pkey: "0x5dca57fe4b6ed2572052efa01b37cc7e20ec1eee3dc3088ca0f5ebb59f875756",
 			minter: "0x1D6D4c33b58317Ca09A900737b6c24D2e1d1aBe6",
-			erc1155: "0xd6a9a86a3Cc56b23169c9492Ca5736Bdc77beF86",
+			erc1155: "0x18AB7860b10c648630FC6DE2CBC67ca999297F96",
 			chain_ident: "BSC",
 			nonce: 0x4
 		},
