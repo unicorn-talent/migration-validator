@@ -11,7 +11,7 @@ const config = {
     // Private Key File
     private_key: './validator2.pem',
     // Elrond minter contract address
-    elrond_minter: 'erd1qqqqqqqqqqqqqpgquvs7p7lj2th4rge03rfpa8trlthwekd4k4as966la8',
+    elrond_minter: 'erd1qqqqqqqqqqqqqpgqxs3kxkru32g48meneg0279sw3cexjnyrk4asc5ywxt',
     // Workaround Elrond Event websocket
     elrond_ev_socket: 'ws://localhost:3000',
     web3: [
