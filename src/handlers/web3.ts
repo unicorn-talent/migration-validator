@@ -121,7 +121,7 @@ export class Web3Helper implements
 
 	public eventHandler = async (ev: SupportedEvs) => ev;
 
-	private extractNftUpdate(nft_data: string, to: string, receipt: TransactionReceipt, parser: (e: Log) => LogDescription, event: string, arg_idx: number): NftUpdate {
+	private extractNftUpdate(nft_data: string, contract_addr: string, to: string, receipt: TransactionReceipt, parser: (e: Log) => LogDescription, event: string, arg_idx: number): NftUpdate {
 		const ev: LogDescription = receipt.logs.map((e) => {
 			try {
 				return parser(e)
@@ -131,11 +131,11 @@ export class Web3Helper implements
 		}).find((e) => e && e.name === event)!;
 
 		const id = ev.args[arg_idx].toString();
-		return { id: nft_data, data: `${this.erc1155},${to},${id}` };
+		return { id: nft_data, data: `${contract_addr},${to},${id}` };
 	}
 
-	private extractNftUpdateErc1155 = (nft_data: string, to: string, receipt: TransactionReceipt) => this.extractNftUpdate(nft_data, to, receipt, erc1155_abi.parseLog.bind(erc1155_abi), "TransferSingle", 3);
-	private extractNftUpdateErc721 = (nft_data: string, to: string, receipt: TransactionReceipt) => this.extractNftUpdate(nft_data, to, receipt, erc721_abi.parseLog.bind(erc721_abi), "Transfer", 2);
+	private extractNftUpdateErc1155 = (nft_data: string, contract_addr: string, to: string, receipt: TransactionReceipt) => this.extractNftUpdate(nft_data, contract_addr, to, receipt, erc1155_abi.parseLog.bind(erc1155_abi), "TransferSingle", 3);
+	private extractNftUpdateErc721 = (nft_data: string, contract_addr: string, to: string, receipt: TransactionReceipt) => this.extractNftUpdate(nft_data, contract_addr, to, receipt, erc721_abi.parseLog.bind(erc721_abi), "Transfer", 2);
 
     async emittedEventHandler(event: SupportedEvs, origin_nonce: number): Promise<[string, NftUpdate | undefined]> {
 		let kind: string;
@@ -166,7 +166,7 @@ export class Web3Helper implements
 				buf.toString('base64')
 			);
 			const receipt = await tx.wait();
-			dat = this.extractNftUpdateErc1155(event.nft_data, event.to, receipt);
+			dat = this.extractNftUpdateErc1155(event.nft_data, this.erc1155, event.to, receipt);
 			kind = "transfer_nft"
 		} else if (event instanceof UnfreezeUniqueEvent) {
 			action = event.id.toString();
@@ -202,7 +202,7 @@ export class Web3Helper implements
 				}
 			}
 			const receipt = await tx.wait();
-			dat = extractor(nft_data, event.to, receipt)
+			dat = extractor(nft_data, encoded.getContractAddr(), event.to, receipt)
 			kind = "unfreeze_nft"
 		} else {
             throw Error("Unsupported event!");
