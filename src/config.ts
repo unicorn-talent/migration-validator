@@ -32,7 +32,7 @@ const config = {
 			nonce: 0x4
 		},
 		{
-			node: "https://ropsten.infura.io/v3/182b3d3fb2d14d5fbe7421348624d1ce",
+			node: "https://eth-ropsten.alchemyapi.io/v2/-x2YuopIsMFeUO2uF_FHPG73-2xk-60x",
 			pkey: "0xb43ddd27cfb99201cb94c11cf5982c9c04582dfd2b64f656cc01bbf96eec0cf6",
 			minter: "0x57Fd7b0F4b2174B1B7B54D657226c3a6C5F49236",
 			erc1155: "0x0218B563Ee50d16b12C7CF95B9F207B69e2ED345",
