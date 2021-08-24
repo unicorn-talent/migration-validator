@@ -31,12 +31,14 @@ import {
     U8Type,
     UserSigner,
 } from '@elrondnetwork/erdjs';
+import { TransactionWatcher } from "@elrondnetwork/erdjs/out/transactionWatcher"
 import BigNumber from 'bignumber.js';
 import { Socket } from 'socket.io-client';
 import {
     ChainEmitter,
     ChainIdentifier,
     ChainListener,
+    NftUpdate,
     TransferEvent,
     TransferUniqueEvent,
     UnfreezeEvent,
@@ -45,6 +47,9 @@ import {
 
 import { toHex } from "./common";
 import v8 from 'v8';
+import axios, {AxiosInstance} from 'axios';
+import {Base64} from 'js-base64';
+
 
 const unfreeze_event_t = new StructType('Unfreeze', [
     new StructFieldDefinition('chain_nonce', '', new U64Type()),
@@ -107,6 +112,61 @@ const nft_info_encoded_t = new StructType('EncodedNft', [
     new StructFieldDefinition('nonce', '', new U64Type())
 ])
 
+type ContractRes = {
+  readonly [idx: string]: number | string;
+}
+
+type NftInfo = {
+	token: string;
+	nonce: number;
+}
+
+
+function filterEventId(results: Array<ContractRes>): number {
+  for (const res of results) {
+    if (res["nonce"] === 0) {
+      continue;
+    }
+    const data = (res.data as string).split("@");
+    if (data[0] != "" || data[1] != "6f6b" || data.length != 3) {
+      continue;
+    }
+
+    try {
+      return parseInt(data[2], 16);
+    } catch (NumberFormatException) {
+      continue;
+    }
+  }
+
+  throw Error(`invalid result: ${results.toString()}`);
+}
+
+export type EsdtTokenInfo = {
+  readonly balance: string;
+  readonly tokenIdentifier: string;
+}
+
+type BEsdtNftInfo = {
+  readonly attributes?: string;
+  readonly creator: string;
+  readonly name: string;
+  readonly nonce: number;
+  readonly royalties: string;
+  readonly uris: string[];
+}
+
+type MaybeEsdtNftInfo = EsdtTokenInfo & (BEsdtNftInfo | undefined);
+
+/**
+ * Information associated with an ESDT NFT
+ */
+type EsdtNftInfo = EsdtTokenInfo & BEsdtNftInfo;
+
+function isEsdtNftInfo(maybe: MaybeEsdtNftInfo): maybe is EsdtNftInfo {
+  return maybe.creator != undefined && maybe.balance == "1";
+}
+
 
 /**
  * Elrond helper
@@ -122,6 +182,7 @@ export class ElrondHelper
         ChainIdentifier
 {
     private readonly provider: ProxyProvider;
+	private readonly providerRest: AxiosInstance;
     private readonly sender: Account;
     private readonly signer: ISigner;
     private readonly mintContract: Address;
@@ -129,15 +190,18 @@ export class ElrondHelper
     private readonly codec: BinaryCodec;
 
     readonly chainNonce = 0x2;
+	readonly chainIdent = "Elrond";
 
     private constructor(
         provider: ProxyProvider,
+		providerRest: AxiosInstance,
         sender: Account,
         signer: ISigner,
         mintContract: Address,
         eventSocket: Socket
     ) {
         this.provider = provider;
+		this.providerRest = providerRest;
         this.sender = sender;
         this.signer = signer;
         this.mintContract = mintContract;
@@ -145,10 +209,47 @@ export class ElrondHelper
         this.codec = new BinaryCodec()
     }
 
+	private transactionResult = async (tx_hash: TransactionHash) => {
+		const uri = `/transaction/${tx_hash.toString}?withResults=true`;
+
+		while (true) {
+			const res = await this.providerRest.get(uri);
+			const data = res.data;
+			if (data["code"] != "successful") {
+				return undefined;
+			}
+
+			const tx_info = data["data"]["transaction"];
+			if (tx_info["status"] == "pending") {
+				await new Promise(r => setTimeout(r, 5000));
+				continue;
+			}
+			if (tx_info["status"] != "success") {
+				throw Error("failed to execute txn");
+			}
+
+			return tx_info;
+		}
+	}
+
     async eventIter(cb: (event: string) => Promise<void>): Promise<void> {
         this.eventSocket.on(
-            'elrond:transfer_event',
-            async (id: string) => await cb(id)
+            'elrond:transfer_tx',
+            async (tx_hash: string) => {
+				let txh;
+				try {
+					txh = new TransactionHash(tx_hash);
+				} catch (_) {
+					return;
+				}
+				await new Promise(r => setTimeout(r, 3000));
+				const watcher = new TransactionWatcher(txh, this.provider);
+				await watcher.awaitExecuted()
+				const res: Array<ContractRes> = (await this.transactionResult(txh))["smartContractResults"]
+				const id = filterEventId(res).toString();
+
+				await cb(id)
+			}
         );
     }
 
@@ -188,6 +289,9 @@ export class ElrondHelper
         socket: Socket
     ): Promise<ElrondHelper> => {
         const provider = new ProxyProvider(node_uri);
+		const providerRest = axios.create({
+			baseURL: node_uri
+		})
         await NetworkConfig.getDefault().sync(provider);
         const signer = new UserSigner(parseUserKey(secret_key));
         const senderac = new Account(signer.getAddress());
@@ -196,6 +300,7 @@ export class ElrondHelper
 
         return new ElrondHelper(
             provider,
+			providerRest,
             senderac,
             signer,
             new Address(minter),
@@ -213,23 +318,27 @@ export class ElrondHelper
     async emittedEventHandler(
         event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent,
         origin_nonce: number
-    ): Promise<TransactionHash> {
+    ): Promise<[TransactionHash, NftUpdate | undefined]> {
         let tx: Transaction;
+		let dat: NftUpdate | undefined = undefined;
         if (event instanceof TransferEvent) {
             tx = await this.transferMintVerify(event, origin_nonce);
         } else if (event instanceof UnfreezeEvent) {
             tx = await this.unfreezeVerify(event);
         } else if (event instanceof TransferUniqueEvent) {
             tx = await this.transferNftVerify(event, origin_nonce);
+			dat = { id: event.nft_data, data: event.to };
         } else if (event instanceof UnfreezeUniqueEvent) {
-            tx = await this.unfreezeNftVerify(event);
+            const res = await this.unfreezeNftVerify(event);
+			tx = res[0];
+			dat = { id: res[1], data: event.to };
         } else {
             throw Error('Unsupported event!');
         }
         const hash = tx.getHash();
         console.log(`Elrond event hash: ${hash.toString()}`);
 
-        return hash;
+        return [hash, dat];
     }
 
     private async unfreezeVerify({
@@ -253,12 +362,19 @@ export class ElrondHelper
         return ex;
     }
 
+	/**
+	* Unfreeze a frozen nft
+	*
+	*
+	* @returns Transaction hash and original data in the nft
+	*/
     private async unfreezeNftVerify({
         id,
         to,
         nft_id,
-    }: UnfreezeUniqueEvent): Promise<Transaction> {
+    }: UnfreezeUniqueEvent): Promise<[Transaction, string]> {
         const nft_info = this.codec.decodeNested(Buffer.from(nft_id), nft_info_encoded_t)[0].valueOf();
+		const nft_data = await this.getLockedNft({ nonce: nft_info.nonce, token: nft_info.token })
 
         const tx = new Transaction({
             receiver: this.mintContract,
@@ -274,7 +390,7 @@ export class ElrondHelper
 
         const ex = await this.sendWrapper(tx);
 
-        return ex;
+        return [ex, Base64.atob(nft_data!.uris[0])];
     }
 
     private async transferNftVerify({
@@ -321,6 +437,24 @@ export class ElrondHelper
         return ex;
     }
 
+	private async listEsdt(owner: string): Promise<{ [index: string]: MaybeEsdtNftInfo }> {
+		const raw = await this.providerRest.get(`/address/${owner}/esdt`);
+		const dat = raw.data.data.esdts as { [index: string]: MaybeEsdtNftInfo };
+
+		return dat;
+	}
+
+	private async listNft(owner: string): Promise<Map<string, EsdtNftInfo>> {
+		const ents: [string, MaybeEsdtNftInfo][] = Object.entries(await this.listEsdt(owner));
+
+		return new Map(ents.filter(([_ident, info]) => isEsdtNftInfo(info)))
+	}
+
+	private async getLockedNft({token, nonce}: NftInfo): Promise<EsdtNftInfo | undefined> {
+		const nfts = await this.listNft(this.mintContract.toString());
+		return nfts.get(`${token}-0${nonce.toString(16)}`);
+	}
+
     private async eventDecoder(
         id: string
     ): Promise<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined> {
@@ -336,7 +470,7 @@ export class ElrondHelper
         const ex = await this.sendWrapper(tx);
 
 		await new Promise(r => setTimeout(r, 4000));
-        await ex.awaitNotarized(this.provider);
+        await ex.awaitExecuted(this.provider);
         console.log(`tx hash: ${ex.getHash().toString()}`);
         const res = (
             await ex.getAsOnNetwork(this.provider)
@@ -392,13 +526,17 @@ export class ElrondHelper
 
                 const encoded_info = this.codec.encodeNested(nft_info);
                 console.log(toHex(encoded_info));
+				const nft_data = await this.getLockedNft(
+					{ token: transfer_nft['token'], nonce: transfer_nft['nonce'] }
+				);
 
                 
                 return new TransferUniqueEvent(
                     new BigNumber(id),
                     parseInt(transfer_nft['chain_nonce'].toString()),
                     Buffer.from(transfer_nft['to']).toString(),
-                    Uint8Array.from(encoded_info)
+                    Uint8Array.from(encoded_info),
+					Base64.atob(nft_data!.uris[0])
                 );
             }
             default:

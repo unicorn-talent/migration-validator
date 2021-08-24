@@ -1,6 +1,6 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { EventRecord, Hash } from '@polkadot/types/interfaces';
-import { ChainEmitter, ChainIdentifier, ChainListener, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from '../chain_handler';
+import { ChainEmitter, ChainIdentifier, ChainListener, NftUpdate, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from '../chain_handler';
 /**
  * Polkadot Freezer Pallet Helper
  *
@@ -12,6 +12,7 @@ export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, v
     private readonly api;
     private readonly signer;
     readonly chainNonce = 1;
+    readonly chainIdent = "XP.network";
     private constructor();
     eventIter(cb: (event: EventRecord) => Promise<void>): Promise<void>;
     /**
@@ -23,8 +24,9 @@ export declare class PolkadotPalletHelper implements ChainEmitter<EventRecord, v
      * WARN: The helper object uses an internal account as a workaround.
      */
     static new: (node_uri: string, signer: KeyringPair) => Promise<PolkadotPalletHelper>;
+    private getLockedNft;
     eventHandler(ev: EventRecord): Promise<TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent | undefined>;
-    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent, origin_nonce: number): Promise<Hash>;
+    emittedEventHandler(event: TransferEvent | TransferUniqueEvent | UnfreezeEvent | UnfreezeUniqueEvent, origin_nonce: number): Promise<[Hash, NftUpdate | undefined]>;
     private resolve_block;
     private unfreeze;
     private unfreeze_nft;

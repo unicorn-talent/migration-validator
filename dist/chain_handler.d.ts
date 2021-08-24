@@ -5,6 +5,7 @@
  */
 import BigNumber from 'bignumber.js';
 import { TxnSocketServe } from './socket';
+import { NFTMetaRepo } from "nft-db-client";
 /**
  * An event indicating a cross chain transfer of assets
  * indicates that X tokens were locked in source blockchain
@@ -24,7 +25,8 @@ export declare class TransferUniqueEvent implements MultiChainEvent {
     readonly chain_nonce: number;
     readonly to: string;
     readonly id: Uint8Array;
-    constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array);
+    readonly nft_data: string;
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array, nft_data: string);
     act_id(): BigNumber;
 }
 /**
@@ -52,6 +54,7 @@ export interface MultiChainEvent {
     act_id(): BigNumber;
 }
 export interface ChainIdentifier {
+    readonly chainIdent: string;
     readonly chainNonce: number;
 }
 /**
@@ -82,10 +85,14 @@ declare type FullChain<Event, Iter, Handlers, Tx extends IntoString> = ChainEmit
  *
  * [listener] should be able to handle all the events [emitter] emits
  */
-export declare function emitEvents<Handlers extends MultiChainEvent>(io: TxnSocketServe, chains: Array<FullChain<any, any, Handlers, IntoString>>): Promise<void>;
+export declare function emitEvents<Handlers extends MultiChainEvent>(io: TxnSocketServe, db: NFTMetaRepo, chains: Array<FullChain<any, any, Handlers, IntoString>>): Promise<void>;
 interface IntoString {
     toString(): string;
 }
+export declare type NftUpdate = {
+    id: string;
+    data: string;
+};
 /**
  * A blockchain which can handle supported events
  *
@@ -96,7 +103,9 @@ export interface ChainListener<SupportedEvents, TxnHash> {
      * Handle an event
      *
      * @param event supported event
+     *
+     * @returns tuple of transaction hash and optional data to update in db
      */
-    emittedEventHandler(event: SupportedEvents, origin_nonce: number): Promise<TxnHash>;
+    emittedEventHandler(event: SupportedEvents, origin_nonce: number): Promise<[TxnHash, NftUpdate | undefined]>;
 }
 export {};

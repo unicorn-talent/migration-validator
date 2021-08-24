@@ -8,6 +8,7 @@ import { abi } from "./Minter.json";
 import config from './config';
 import { txEventSocket, TxnSocketServe } from './socket';
 import { ElrondHelper, emitEvents, PolkadotPalletHelper, Web3Helper } from './index';
+import {networkNFTMetaRepo, nftMetaDtoMapper, NFTMetaRepo, nftMetaService} from 'nft-db-client';
 
 async function polkadotTestHelper(): Promise<PolkadotPalletHelper> {
 	await waitReady();
@@ -34,6 +35,8 @@ async function web3TestHelpers(): Promise<Array<Web3Helper>> {
 			node,
 			pkey,
 			minter,
+			erc1155,
+			chain_ident,
 			nonce
 		}) => await Web3Helper.new(
 			node,
@@ -41,6 +44,8 @@ async function web3TestHelpers(): Promise<Array<Web3Helper>> {
 			minter,
 			//@ts-expect-error minter abi
 			abi,
+			erc1155,
+			chain_ident,
 			nonce
 		))
 	);
@@ -62,10 +67,15 @@ function testSocketServer(): TxnSocketServe {
 	return io;
 }
 
+function testNFTMetaRepo(): NFTMetaRepo {
+	return networkNFTMetaRepo(nftMetaService(config.db_rest), nftMetaDtoMapper());
+}
+
 const main = async () => {
 	const io = testSocketServer();
 	emitEvents(
 		io,
+		testNFTMetaRepo(),
 		[
 			await polkadotTestHelper(),
 			await elrondTestHelper(),

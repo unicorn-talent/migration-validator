@@ -1,9 +1,12 @@
 import { Networkish } from "@ethersproject/networks";
 import BigNumber from "bignumber.js";
 import { Contract, providers, Wallet, BigNumber as EthBN } from "ethers";
+import { Provider } from "@ethersproject/abstract-provider";
 import { Interface } from "ethers/lib/utils";
-import { ChainEmitter, ChainIdentifier, ChainListener, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from "../chain_handler";
+import { ChainEmitter, ChainIdentifier, ChainListener, NftUpdate, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from "../chain_handler";
 import {NftEthNative, NftPacked} from "../encoding";
+import { abi as ERC721_abi } from "../fakeERC721.json";
+import { abi as ERC1155_abi } from "../fakeERC1155.json";
 
 
 type SupportedEvs = TransferEvent | UnfreezeEvent | TransferUniqueEvent | UnfreezeUniqueEvent;
@@ -13,22 +16,38 @@ export class Web3Helper implements
 	ChainListener<SupportedEvs, string>,
 	ChainIdentifier
 {
-    readonly mintContract: Contract;
+    private readonly mintContract: Contract;
+	readonly chainIdent: string;
 	readonly chainNonce: number;
+	private readonly w3: Provider;
+	private readonly erc1155: string;
 
-    private constructor(mintContract: Contract, chainNonce: number) {
+    private constructor(w3: Provider, mintContract: Contract, erc1155: string, chainIdent: string, chainNonce: number) {
+		this.w3 = w3;
         this.mintContract = mintContract;
+		this.chainIdent = chainIdent;
 		this.chainNonce = chainNonce;
+		this.erc1155 = erc1155;
     }
 
-    public static new = async function(provider_uri: string, pkey: string, minter: string, minterAbi: Interface, chainNonce: number, networkOpts?: Networkish): Promise<Web3Helper> {
+    public static new = async function(provider_uri: string, pkey: string, minter: string, minterAbi: Interface, erc1155: string, chainIdent: string, chainNonce: number, networkOpts?: Networkish): Promise<Web3Helper> {
         const w3 = new providers.JsonRpcProvider(provider_uri, networkOpts);
 		await w3.ready;
         const acc = (new Wallet(pkey)).connect(w3);
         const mint = new Contract(minter, minterAbi, acc);
 
-        return new Web3Helper(mint, chainNonce);
+        return new Web3Helper(w3, mint, erc1155, chainIdent, chainNonce);
     }
+
+	private async nftUriErc721(contract: string, token: EthBN): Promise<string> {
+		const erc = new Contract(contract, ERC721_abi, this.w3);
+		return await erc.tokenURI(token);
+	}
+
+	private async nftUriErc1155(contract: string, token: EthBN): Promise<string> {
+		const erc = new Contract(contract, ERC1155_abi, this.w3);
+		return await erc.tokenURI(token);
+	}
 
 	async eventIter(cb: ((event: SupportedEvs) => Promise<void>)): Promise<void> {
 		this.mintContract.on('Unfreeze', async (action_id: EthBN, chain_nonce: EthBN, to: string, value: EthBN) => {
@@ -73,7 +92,8 @@ export class Web3Helper implements
 				new BigNumber(action_id.toString()),
 				chain_nonce.toNumber(),
 				to,
-				prot.serializeBinary()
+				prot.serializeBinary(),
+				await this.nftUriErc721(contract_addr, id)
 			)
 
 			await cb(ev);
@@ -88,7 +108,8 @@ export class Web3Helper implements
 				new BigNumber(action_id.toString()),
 				chain_nonce.toNumber(),
 				to,
-				prot.serializeBinary()
+				prot.serializeBinary(),
+				await this.nftUriErc1155(contract_addr, id)
 			)
 
 			await cb(ev);
@@ -97,10 +118,17 @@ export class Web3Helper implements
 
 	public eventHandler = async (ev: SupportedEvs) => ev;
 
-    async emittedEventHandler(event: SupportedEvs, origin_nonce: number): Promise<string> {
+	private extractNftUpdate(nft_data: string, to: string, receipt: any): NftUpdate {
+		const ev = (receipt as any).events.find((e: any) => e.event === 'TransferSingle');
+		const id = ev.args[3].toString();
+		return { id: nft_data, data: `${this.erc1155},${to},${id}` };
+	}
+
+    async emittedEventHandler(event: SupportedEvs, origin_nonce: number): Promise<[string, NftUpdate | undefined]> {
 		let kind: string;
 		let action: string;
 		let tx: providers.TransactionResponse;
+		let dat: NftUpdate | undefined = undefined;
 		if (event instanceof TransferEvent) {
 			action = event.action_id.toString();
             tx = await this.mintContract.validate_transfer(action, origin_nonce, event.to, event.value.toString());
@@ -124,16 +152,20 @@ export class Web3Helper implements
 				event.to,
 				buf.toString('base64')
 			);
+			const receipt = await tx.wait();
+			dat = this.extractNftUpdate(event.nft_data, event.to, receipt);
 			kind = "transfer_nft"
 		} else if (event instanceof UnfreezeUniqueEvent) {
 			action = event.id.toString();
 			const encoded = NftEthNative.deserializeBinary(event.nft_id);
+			let nft_data;
 			
 			switch (encoded.getNftKind()) {
 				case NftEthNative.NftKind.ERC1155: {
 					console.log("event", event.to);
 					console.log("id", encoded.getId());
 					console.log("contract addr", encoded.getContractAddr());
+					nft_data = await this.nftUriErc1155(encoded.getContractAddr(), EthBN.from(encoded.getId()))
 					tx = await this.mintContract.validate_unfreeze_erc1155(
 						action,
 						event.to,
@@ -143,6 +175,7 @@ export class Web3Helper implements
 					break;
 				}
 				case NftEthNative.NftKind.ERC721: {
+					nft_data = await this.nftUriErc721(encoded.getContractAddr(), EthBN.from(encoded.getId()))
 					tx = await this.mintContract.validate_unfreeze_erc721(
 						action,
 						event.to,
@@ -152,6 +185,8 @@ export class Web3Helper implements
 					break;
 				}
 			}
+			const receipt = await tx.wait();
+			dat = this.extractNftUpdate(nft_data, event.to, receipt)
 			kind = "unfreeze_nft"
 		} else {
             throw Error("Unsupported event!");
@@ -160,6 +195,6 @@ export class Web3Helper implements
 		await tx.wait();
 		console.log(`web3 ${kind} action_id: ${action}, tx: ${tx.hash} executed`);
 
-		return tx.hash;
+		return [tx.hash, dat];
     }
 }

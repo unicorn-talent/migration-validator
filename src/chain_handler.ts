@@ -6,6 +6,7 @@
 
 import BigNumber from 'bignumber.js';
 import { TxnSocketServe } from './socket';
+import { NFTMetaRepo } from "nft-db-client";
 
 /**
  * An event indicating a cross chain transfer of assets
@@ -36,12 +37,14 @@ export class TransferUniqueEvent implements MultiChainEvent {
     readonly chain_nonce: number;
     readonly to: string;
     readonly id: Uint8Array;
+	readonly nft_data: string;
 
-    constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array) {
+    constructor(action_id: BigNumber, chain_nonce: number, to: string, id: Uint8Array, nft_data: string) {
         this.action_id = action_id;
         this.chain_nonce = chain_nonce;
         this.to = to;
         this.id = id;
+		this.nft_data = nft_data;
     }
 
 	public act_id(): BigNumber {
@@ -95,6 +98,7 @@ export interface MultiChainEvent {
 }
 
 export interface ChainIdentifier {
+	readonly chainIdent: string;
     readonly chainNonce: number;
 }
 
@@ -136,6 +140,7 @@ type ChainMap<Event, Iter, Handlers, Tx extends IntoString> = {
  */
 export async function emitEvents<Handlers extends MultiChainEvent>(
     io: TxnSocketServe,
+	db: NFTMetaRepo,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     chains: Array<FullChain<any, any, Handlers, IntoString>>
 ): Promise<void> {
@@ -143,7 +148,10 @@ export async function emitEvents<Handlers extends MultiChainEvent>(
     const map: ChainMap<any, any, Handlers, IntoString> = {};
 
     const handleEvent = async (listener: ChainListener<Handlers, IntoString> & ChainIdentifier, event: Handlers, origin_nonce: number) => {
-        const tx = await listener.emittedEventHandler(event, origin_nonce);
+        const [tx, updateDat] = await listener.emittedEventHandler(event, origin_nonce);
+		if (updateDat != undefined) {
+			await db.updateById(updateDat.id, null, null, null, `${listener.chainIdent},${updateDat}`);
+		}
 		io.emit("tx_executed_event", listener.chainNonce, event.act_id().toString(), tx.toString())
     }
 
@@ -183,6 +191,11 @@ interface IntoString {
     toString(): string;
 }
 
+export type NftUpdate = {
+	id: string,
+	data: string
+};
+
 /**
  * A blockchain which can handle supported events
  * 
@@ -193,6 +206,8 @@ export interface ChainListener<SupportedEvents, TxnHash> {
      * Handle an event
      * 
      * @param event supported event
+	 *
+	 * @returns tuple of transaction hash and optional data to update in db
      */
-    emittedEventHandler(event: SupportedEvents, origin_nonce: number): Promise<TxnHash>;
+    emittedEventHandler(event: SupportedEvents, origin_nonce: number): Promise<[TxnHash, NftUpdate | undefined]>;
 }
