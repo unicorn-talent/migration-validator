@@ -150,7 +150,7 @@ export async function emitEvents<Handlers extends MultiChainEvent>(
     const handleEvent = async (listener: ChainListener<Handlers, IntoString> & ChainIdentifier, event: Handlers, origin_nonce: number) => {
         const [tx, updateDat] = await listener.emittedEventHandler(event, origin_nonce);
 		if (updateDat != undefined) {
-			await db.updateById(updateDat.id, null, null, null, `${listener.chainIdent},${updateDat}`);
+			await db.updateById(updateDat.id, null, null, null, `${listener.chainIdent},${updateDat.data}`);
 		}
 		io.emit("tx_executed_event", listener.chainNonce, event.act_id().toString(), tx.toString())
     }
