@@ -2,13 +2,12 @@ import * as fs from 'fs';
 import { createServer } from "http";
 import { Keyring } from '@polkadot/api';
 import { waitReady } from '@polkadot/wasm-crypto';
-import { io as io_client } from "socket.io-client";
 
+import {networkNFTMetaRepo, nftMetaDtoMapper, NFTMetaRepo, nftMetaService} from 'nft-db-client';
 import { abi } from "./Minter.json";
 import config from './config';
 import { txEventSocket, TxnSocketServe } from './socket';
 import { ElrondHelper, emitEvents, PolkadotPalletHelper, Web3Helper } from './index';
-import {networkNFTMetaRepo, nftMetaDtoMapper, NFTMetaRepo, nftMetaService} from 'nft-db-client';
 
 async function polkadotTestHelper(): Promise<PolkadotPalletHelper> {
 	await waitReady();
@@ -25,7 +24,7 @@ async function elrondTestHelper(): Promise<ElrondHelper> {
 		config.elrond_node,
 		aliceE,
 		config.elrond_minter,
-		io_client(config.elrond_ev_socket)
+		new WebSocket(config.elrond_ev_socket)
 	);
 }
 

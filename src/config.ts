@@ -12,8 +12,8 @@ const config = {
     // Elrond minter contract address
     elrond_minter:
         'erd1qqqqqqqqqqqqqpgq9jx5etzfygj7clpqdv9upkz08sxpauvps3yslh9d3l',
-    // Workaround Elrond Event websocket
-    elrond_ev_socket: 'ws://localhost:3000',
+    // Elrond(notifier-go) Event websocket
+    elrond_ev_socket: 'ws://localhost:5000/hub/ws',
 	web3: [
 		{
 			node: "https://http-testnet.hecochain.com",

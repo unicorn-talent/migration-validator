@@ -1,12 +1,12 @@
+import { Log, Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { Networkish } from "@ethersproject/networks";
 import BigNumber from "bignumber.js";
-import { Contract, providers, Wallet, BigNumber as EthBN } from "ethers";
-import { Provider, TransactionReceipt, Log } from "@ethersproject/abstract-provider";
+import { Contract, BigNumber as EthBN, providers, Wallet } from "ethers";
 import { Interface, LogDescription } from "ethers/lib/utils";
 import { ChainEmitter, ChainIdentifier, ChainListener, NftUpdate, TransferEvent, TransferUniqueEvent, UnfreezeEvent, UnfreezeUniqueEvent } from "../chain_handler";
 import {NftEthNative, NftPacked} from "../encoding";
-import { abi as ERC721_abi } from "../fakeERC721.json";
 import { abi as ERC1155_abi } from "../fakeERC1155.json";
+import { abi as ERC721_abi } from "../fakeERC721.json";
 
 
 type SupportedEvs = TransferEvent | UnfreezeEvent | TransferUniqueEvent | UnfreezeUniqueEvent;
@@ -122,13 +122,16 @@ export class Web3Helper implements
 	public eventHandler = async (ev: SupportedEvs) => ev;
 
 	private extractNftUpdate(nft_data: string, contract_addr: string, to: string, receipt: TransactionReceipt, parser: (e: Log) => LogDescription, event: string, arg_idx: number): NftUpdate {
-		const ev: LogDescription = receipt.logs.map((e) => {
+		const ev: LogDescription | undefined = receipt.logs.map((e) => {
 			try {
 				return parser(e)
 			} catch (_) {
 				return undefined
 			}
-		}).find((e) => e && e.name === event)!;
+		}).find((e) => e && e.name === event);
+		if (!ev) {
+			throw Error("Couldn't extract event from sc?!")
+		}
 
 		const id = ev.args[arg_idx].toString();
 		return { id: nft_data, data: `${contract_addr},${to},${id}` };
